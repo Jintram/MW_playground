@@ -38,8 +38,8 @@ ggplot(data=freq_frame, mapping=aes(x=centers, y=countsp1)) +
         plot.title = element_text(size=TEXTSIZE)) +
   scale_x_continuous(breaks = seq(0,10, by = 1)) +
   scale_y_continuous(breaks = 10^seq(0,5, by = 1),labels = comma)
-ggsave("/Users/m.wehrens/Documents/Scripts_R/plots/data_exploration_low_count.pdf", width=6, height=4)
-ggsave("/Users/m.wehrens/Documents/Scripts_R/plots/data_exploration_low_count.png", width=6, height=4)
+ggsave("./plots/data_exploration_low_count.pdf", width=6, height=4)
+ggsave("./plots/data_exploration_low_count.png", width=6, height=4)
 
 # Distribution of transcript counts for counts between 0-150 =============================
 # To make sure data is of good quality
@@ -83,8 +83,8 @@ ggplot(data=freq_frame, mapping=aes(x=centers, y=countsp1)) +
         plot.title = element_text(size=TEXTSIZE)) +
   scale_x_continuous(breaks = seq(0,CUTOFF, by = 25)) +
   scale_y_continuous(breaks = 10^seq(0,5, by = 1),labels = comma)
-ggsave("/Users/m.wehrens/Documents/Scripts_R/plots/data_exploration_counts_pdf.pdf", width=6, height=4)
-ggsave("/Users/m.wehrens/Documents/Scripts_R/plots/data_exploration_counts_pdf.png", width=6, height=4)
+ggsave("./plots/data_exploration_counts_pdf.pdf", width=6, height=4)
+ggsave("./plots/data_exploration_counts_pdf.png", width=6, height=4)
 
 
 # Look per gene, how many positive hits we see in all the cells =======================================
@@ -135,8 +135,8 @@ ggplot(data=filter(freq_pergene_frame,counts>0), aes(x=centers, y=counts))+
   scale_y_continuous(breaks = 10^seq(0,3, by = 1),labels = comma) +
   annotate("text",x=10^(log10(nr_cells)/2),y=max(freq$counts),label="Note scale is logarithmic, so points with value 0 ommitted;
            Red line indicates total nr of cells.")
-ggsave("/Users/m.wehrens/Documents/Scripts_R/plots/data_exploration_positivecount_pergene.pdf", width=6, height=4)
-ggsave("/Users/m.wehrens/Documents/Scripts_R/plots/data_exploration_positivecount_pergene.png", width=6, height=4)
+ggsave("./plots/data_exploration_positivecount_pergene.pdf", width=6, height=4)
+ggsave("./plots/data_exploration_positivecount_pergene.png", width=6, height=4)
 # Consistency check, are all genes in my statistics?
 (sum(freq_pergene$counts)==nr_genes)
 
@@ -159,7 +159,7 @@ ggplot(data=freq_percell_frame, aes(x=centers, y=counts))+
   #scale_y_continuous(breaks = 10^seq(0,2, by = 1),labels = comma) +
   #annotate("text",x=10^(log10(nr_cells)/2),y=max(freq$counts),label="Note scale is logarithmic, so points with value 0 ommitted;
   #         Red line indicates total nr of cells.")
-ggsave("/Users/m.wehrens/Documents/Scripts_R/plots/data_exploration_positivecount_percell.pdf", width=6, height=4)
-ggsave("/Users/m.wehrens/Documents/Scripts_R/plots/data_exploration_positivecount_percell.png", width=6, height=4)
+ggsave("./plots/data_exploration_positivecount_percell.pdf", width=6, height=4)
+ggsave("./plots/data_exploration_positivecount_percell.png", width=6, height=4)
 # Consistency check, are all cells in my statistics?
 (sum(freq_percell$counts)==nr_cells)
