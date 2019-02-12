@@ -59,118 +59,68 @@ indices_to_select = which(as.integer(positives_per_cell>100) %in% 1)
 # Now select the cells
 my_test_data_selection=my_test_data[,indices_to_select]
 
-# Let's look at an arbitrary correlation between two cells ------------------------------------
+# Let's test getting these correlations on some fake data --------------------------------------
 
-ID1<-1
-ID2<-2
+# generate some fake data
+my_fake_data <- data.frame(cell1=c(10,2,3,4),cell2=c(9,3,2,8),cell3=c(1,2,3,2)) # cells 1 and 2 fairly similar
 
-cell1_values <- my_test_data_selection[,ID1]
-cell2_values <- my_test_data_selection[,ID2]
+# get the correlation matrix
+res <- cor(my_fake_data,my_fake_data)
+round(res, 2)
 
-overlap_of_postives = sum(as.numeric(cell1_values>0 & cell1_values>0))
-nr_genes_sel_data = nrow(my_test_data_selection) # number of genes in selection
+# melt it (creates dataframe with all X,Y pairs and their Y value
+melt_res <- melt(res)
 
-neitherzero_idxs=which((cell1_values>0 & cell1_values>0))
-# (as.numeric(slice(my_test_data_selection,ID1)>0))&(as.numeric(slice(my_test_data_selection,ID2)>0))
-
-cor_cells = cor(cell1_values,cell2_values)
-cov_cells = cov(cell1_values,cell2_values)
-var_cell1 = var(cell1_values)
-var_cell2 = var(cell2_values)
-lsf_b = cov_cells/var_cell1
-lsf_a = mean(cell2_values)-lsf_b*mean(cell1_values)
-x_fitted = c(1,max(cell1_values))
-y_fitted = lsf_b*x_fitted+lsf_a
-  
-# Create dataframes for plotting
-scatter_2_cells = data.frame(x=cell1_values,y=cell2_values)
-fitline_df      = data.frame(x_fitted=x_fitted,y_fitted=y_fitted)
-
-# Now also fit using standard function
-my_lsf2 = lm(cell2_values ~ cell1_values)
-lsf_a2 = my_lsf$coefficients[2]
-lsf_b2 = my_lsf$coefficients[1]
-# Now see what happens if we base fit on overlap only
-my_lsf3 = lm(cell2_values[neitherzero_idxs] ~ cell1_values[neitherzero_idxs])
-lsf_a3 = my_lsf$coefficients[2]
-lsf_b3 = my_lsf$coefficients[1]
-# Create params to plot again
-x_fitted3 = c(1,max(cell1_values))
-y_fitted3 = lsf_b3*x_fitted3+lsf_a3
-fitline_df3      = data.frame(x_fitted=x_fitted3,y_fitted=y_fitted3)
-
-neitherzero_idxs
-
-# normal plot (including zero values) ---
-TEXTSIZE=15
-ggplot(data=scatter_2_cells, aes(x=x,y=y))+
-  geom_point()+
-  geom_line(data=fitline_df, aes(x=x_fitted,y=y_fitted))+
-  geom_line(data=fitline_df3, aes(x=x_fitted,y=y_fitted),color='red')+
-  theme(legend.position="none",
+# plot this using ggplot, most simple way
+TEXTSIZE=12
+ggplot(data = melt_res, aes(x=Var1, y=Var2, fill=value)) + 
+  geom_tile() +
+  scale_fill_gradient2(limits=c(-1, 1),low='darkred',mid = "white", high = "steelblue",name=element_blank())+
+  xlab(element_blank())+ylab(element_blank())+
+  ggtitle('Correlation')+
+  theme(#legend.position="none",
         text = element_text(size=TEXTSIZE),
         axis.text = element_text(size=TEXTSIZE),
-        plot.title = element_text(size=TEXTSIZE))+
-  ggtitle(paste("Gene expression cell ", toString(ID1)," vs ", toString(ID2), " (selection)
-                 Points w/ 2 positive values = ", toString(overlap_of_postives), " of " , toString(nr_genes_sel_data)))+
-  xlab(paste("Cell ",toString(ID1))) + ylab(paste("Cell ",toString(ID1)))
+        plot.title = element_text(size=TEXTSIZE),
+        legend.text = element_text(size=TEXTSIZE),
+        axis.text.x = element_text(angle = 90, hjust = 1))
 
-# log plot ; no zero values---
-TEXTSIZE=15
-ggplot(data=filter(scatter_2_cells,x>0,y>0), aes(x=x,y=y))+
-  geom_point()+
-  geom_line(data=fitline_df, aes(x=x_fitted,y=y_fitted))+
-  geom_line(data=fitline_df3, aes(x=x_fitted,y=y_fitted),color='red')+
-  coord_trans(x="log10",y="log10")+
-  theme(legend.position="none",
-        text = element_text(size=TEXTSIZE),
-        axis.text = element_text(size=TEXTSIZE),
-        plot.title = element_text(size=TEXTSIZE))+
-  ggtitle(paste("Gene expression cell ", toString(ID1)," vs ", toString(ID2), " (selection; zero values genes ommitted)
-                Points w/ 2 positive values = ", toString(overlap_of_postives), " of " , toString(nr_genes_sel_data)))+
-  xlab(paste("Cell ",toString(ID1))) + ylab(paste("Cell ",toString(ID1)))
+# Now for real data ----------------------------------------------------------------------------
 
-# (Work in progress) ==================================================================
-# I need to look at the code below 
-# I first correlated the expression of genes over different cells;
-# This does not tell much about cell identity, but might be interesting 
-# to create functional groups of genes..
+# get the correlation matrix
+res <- cor(my_test_data_selection,my_test_data_selection)
+round(res, 2)
 
-neitherzero=(as.numeric(slice(my_test_data_selection,ID1)>0))&(as.numeric(slice(my_test_data_selection,ID2)>0))
-two_genes_scatter<-data_frame(x=as.numeric(slice(my_test_data_selection,ID1)),
-                              y=as.numeric(slice(my_test_data_selection,ID2)),
-                              neitherzero=neitherzero)
+# melt it (creates dataframe with all X,Y pairs and their Y value
+melt_res <- melt(res)
 
-cor_genes = cor(two_genes_scatter$x,two_genes_scatter$y)
-cov_genes = cov(two_genes_scatter$x,two_genes_scatter$y)
-var_gene1 = var(two_genes_scatter$x)
-var_gene2 = var(two_genes_scatter$y)
-lsf_b = cov_genes/var_gene1
-lsf_a = mean(two_genes_scatter$y)-lsf_b*mean(two_genes_scatter$x)
+# plot this using ggplot, most raw method
+TEXTSIZE=6
+ggplot(data = melt_res, aes(x=Var1, y=Var2, fill=value)) + 
+  geom_tile() +
+  scale_fill_gradient2(limits=c(-1, 1),low='darkred',mid = "white", high = "steelblue",name=element_blank())+
+  xlab(element_blank())+ylab(element_blank())+
+  ggtitle('Correlation')+
+  theme(#legend.position="none",
+    text = element_text(size=TEXTSIZE),
+    axis.text = element_text(size=TEXTSIZE),
+    plot.title = element_text(size=TEXTSIZE),
+    legend.text = element_text(size=TEXTSIZE),
+    axis.text.x = element_text(angle = 90, hjust = 1))
+ggsave("./plots/data_exploration_correlationmap.pdf", width=30, height=30)
+ggsave("./plots/data_exploration_correlationmap.png", width=30, height=30)
 
-x_values_fitline = seq(0,max(two_genes_scatter$x))
-y_values_fitline = lsf_b*x_values_fitline
-fitline_df = data.frame(x=x_values_fitline,y=y_values_fitline)
+# How can we order the cells now such that we better see their pattern?
+# This can obviously be done with the clustering analysis, 
+# we could also do a t-SNE project onto 1 dimension, because then similar 
+# cells are at similar distances. But this is a method that is independent from
+# the correlation plot. So we'd rather use something related to the correlation
+# matrix.
+# --> I think also R-built in algorithms use some clustering algorithm, so
+# we'd now also need to use a clustering algorithm.
 
-ggplot(data=two_genes_scatter, aes(x=x,y=y))+
-  geom_point(aes(colour=neitherzero))+
-  geom_line(data=fitline_df)+
-  theme(legend.position="none",
-        text = element_text(size=TEXTSIZE),
-        axis.text = element_text(size=TEXTSIZE),
-        plot.title = element_text(size=TEXTSIZE))+
-  ggtitle(paste("Scatter between two genes, ", toString(nrow(two_genes_scatter)), " points that partially collapse"))+
-  xlab(paste("gene 1    (",row.names(my_test_data)[ID1],")")) + ylab(paste("gene 2    (",row.names(my_test_data)[ID2],")"))
-
-
-
-
-
-# Now get the correlation ----------------------------------------------------------------------
-
-
-
-
+# basic code version
+{"
 # get the correlation matrix
 res <- cor(my_test_data_selection,my_test_data_selection)
 round(res, 2)
@@ -181,12 +131,10 @@ melt_res <- melt(res)
 # plot this using ggplot, most simple way
 ggplot(data = melt_res, aes(x=Var1, y=Var2, fill=value)) + 
   geom_tile()
+"}
 
-# Slightly more elaborate plotting
-ggplot(data = melt_res, aes(x=Var1, y=Var2, fill=value)) + 
-  geom_tile(aes(fill = rescale), colour="white")+ 
-  scale_fill_gradient(low = "white",high = "steelblue")
-
+# Some additional correlation matrix tools ---------------------------------------------------------
+# (Built-in)
 
 # Below code can be used for plotting also, but since our dataset is large, it's not most convenient..
 "
@@ -201,10 +149,97 @@ col<- colorRampPalette(c("blue", "white", "red"))(20)
 heatmap(x = res, col = col, symm = TRUE)
 legend("left")
 
+# Let's try some clustering -------------------------------------------------------------------------
 
-p <- ggplot(res) + 
-    geom_tile(aes(fill = rescale),colour = "white") + 
-    scale_fill_gradient(low = "white",high = "steelblue"))
+# So if I understand correctly the clustering is performed on the correlation matrix, to find the similarity
+# between the similarity profiles (inception :))
+
+# First dimensionality-reduced plotting of corr matrix ----------------------------------------------
+# So let's just try to plot this -- but this is also a 256 dimensional space
+# So now we'd need some dimensionality reduction methods also
+# Convenient website: https://www.datacamp.com/community/tutorials/pca-analysis-r
+
+res_df = as.data.frame(res)
+
+mypca = prcomp(x=res_df)
+# Put the values of each sample in terms of the principal components in dataframe
+mypca_df = as.data.frame(mypca$x)
+
+# now just plot those points
+ggplot(data=mypca_df)+
+  geom_point(aes(x=PC1,y=PC2))
+
+# We need a bigger color palette ---------------------------------------------------------------------------------
+
+library("RColorBrewer")
+n <- 60
+qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
+col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
+pie(rep(1,n), col=sample(col_vector, n))
+
+# Then try to cluster the lines of the corr matrix according to K-means -----------------------------------
+
+myclusters = kmeans(res_df,centers=15)
+cluster_assignments = factor(myclusters$cluster)
+
+library("RColorBrewer")
+# now plot PCA again, but color coded for clusters
+ggplot(data=mypca_df)+
+  geom_point(aes(x=PC1,y=PC2, color=cluster_assignments))+
+  scale_color_manual(values=col_vector)+
+  ggtitle('Correlation matrix converted to points (PCA projection)')
+  #scale_color_brewer(palette="Dark2")
+
+# Now this hierarchy can be applied to the corr matrix to sort it
+mysorted_data=sort.int(cluster_assignments,index.return=TRUE)
+mysorted_idx = mysorted_data$ix
+
+sorted_res = res[mysorted_idx,]
+sorted_res = sorted_res[,mysorted_idx]
+
+# now plot this
+# needs melt first (creates dataframe with all X,Y pairs and their Y value
+melt_res <- melt(sorted_res)
+# plot it
+TEXTSIZE=6
+ggplot(data = melt_res, aes(x=Var1, y=Var2, fill=value)) + 
+  geom_tile() +
+  scale_fill_gradient2(limits=c(-1, 1),low='darkred',mid = "white", high = "steelblue",name=element_blank())+
+  xlab(element_blank())+ylab(element_blank())+
+  ggtitle('Correlation')+
+  theme(#legend.position="none",
+    text = element_text(size=TEXTSIZE),
+    axis.text = element_text(size=TEXTSIZE),
+    plot.title = element_text(size=TEXTSIZE),
+    legend.text = element_text(size=TEXTSIZE),
+    axis.text.x = element_text(angle = 90, hjust = 1))
+ggsave("./plots/data_exploration_correlationmap.pdf", width=30, height=30)
+ggsave("./plots/data_exploration_correlationmap.png", width=30, height=30)
+
+# Now, R also has t-SNE algorithm that we can use from library ---------------------------------------------
+# Let's use that for projection
+library("Rtsne")
+
+my_tsne = Rtsne(X=res_df)
+# Put the values of each sample in terms of the principal components in dataframe
+my_tsne_df = as.data.frame(my_tsne$Y)
+
+# now plot these points again, also showing the clusters
+ggplot(data=my_tsne_df)+
+  geom_point(aes(x=V1,y=V2, color=cluster_assignments))+
+  scale_color_manual(values=col_vector)+
+  ggtitle('Correlation matrix converted to points (t-SNE projection)')
+
+# Note that this is of course using the correlation functions as input, which might explains the 
+# pattern in the data
+
+# Now it would be nice if we could determine the optimal cluster size ------------------------------------------
+# Grun2015 uses the gap statistic for this
+
+
+
+
+
 
 
 
