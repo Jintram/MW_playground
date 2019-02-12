@@ -1,6 +1,9 @@
 
 # Load test data set and libraries =======================================================
 
+# set working directory to directory of scripts
+setwd('/Users/m.wehrens/Documents/git_repos/MW_playing/')
+
 # Use install.packages("tidyverse") if library is not installed
 library('tidyverse')
 library('reshape2') # necessary for melt
@@ -163,3 +166,90 @@ ggsave("./plots/data_exploration_positivecount_percell.pdf", width=6, height=4)
 ggsave("./plots/data_exploration_positivecount_percell.png", width=6, height=4)
 # Consistency check, are all cells in my statistics?
 (sum(freq_percell$counts)==nr_cells)
+
+# Looking at correlations in non-systemic way ----------------------------------------------------------------
+
+# Let's look at an arbitrary correlation between two cells ------------------------------------
+
+ID1<-1
+ID2<-2
+
+cell1_values <- my_test_data_selection[,ID1]
+cell2_values <- my_test_data_selection[,ID2]
+
+overlap_of_postives = sum(as.numeric(cell1_values>0 & cell1_values>0))
+nr_genes_sel_data = nrow(my_test_data_selection) # number of genes in selection
+
+neitherzero_idxs=which((cell1_values>0 & cell1_values>0))
+# (as.numeric(slice(my_test_data_selection,ID1)>0))&(as.numeric(slice(my_test_data_selection,ID2)>0))
+
+cor_cells <- cor(cell1_values,cell2_values)
+cov_cells <- cov(cell1_values,cell2_values)
+var_cell1 <- var(cell1_values)
+var_cell2 <- var(cell2_values)
+lsf_b <- cov_cells/var_cell1
+lsf_a <- mean(cell2_values)-lsf_b*mean(cell1_values)
+x_fitted <- seq(1,max(cell1_values),max(cell1_values)/100)
+y_fitted <- lsf_b*x_fitted+lsf_a # y = a + b*x
+
+# Create dataframes for plotting
+scatter_2_cells <- data.frame(x=cell1_values,y=cell2_values)
+fitline_df      <- data.frame(x_fitted=x_fitted,y_fitted=y_fitted)
+
+# Now also fit using standard function
+my_lsf2 <- lm(cell2_values ~ cell1_values)
+lsf_a2 <- my_lsf2$coefficients[1] # y = a + b*x
+lsf_b2 <- my_lsf2$coefficients[2] 
+# Create params to plot again
+x_fitted2 <- seq(1,max(cell1_values),max(cell1_values)/100)
+y_fitted2 <- lsf_b2*x_fitted2+lsf_a2
+fitline_df2      <- data.frame(x_fitted=x_fitted2,y_fitted=y_fitted2)
+# Now see what happens if we base fit on overlap only
+my_lsf3 <- lm(cell2_values[neitherzero_idxs] ~ cell1_values[neitherzero_idxs])
+lsf_a3 <- my_lsf3$coefficients[1] # y = a + b*x
+lsf_b3 <- my_lsf3$coefficients[2]
+# Create params to plot again
+x_fitted3 <- seq(1,max(cell1_values),max(cell1_values)/100)
+y_fitted3 <- lsf_b3*x_fitted3+lsf_a3
+fitline_df3 <- data.frame(x_fitted=x_fitted3,y_fitted=y_fitted3)
+
+neitherzero_idxs
+
+# normal plot (including zero values) ---
+TEXTSIZE=15
+ggplot(data=scatter_2_cells, aes(x=x,y=y))+
+  geom_point()+
+  geom_line(data=fitline_df, aes(x=x_fitted,y=y_fitted))+
+  #geom_line(data=fitline_df2, aes(x=x_fitted,y=y_fitted),linetype = "dashed", size = 2)+
+  geom_line(data=fitline_df3, aes(x=x_fitted,y=y_fitted),color='red')+
+  theme(legend.position="none",
+        text = element_text(size=TEXTSIZE),
+        axis.text = element_text(size=TEXTSIZE),
+        plot.title = element_text(size=TEXTSIZE))+
+  ggtitle(paste("Gene expression cell ", toString(ID1)," vs ", toString(ID2), " (selection)
+                Points w/ 2 positive values = ", toString(overlap_of_postives), " of " , toString(nr_genes_sel_data)))+
+  xlab(paste("Cell ",toString(ID1))) + ylab(paste("Cell ",toString(ID1)))
+ggsave("./plots/data_exploration_scatter_cell_vs_cell.pdf", width=6, height=4)
+ggsave("./plots/data_exploration_scatter_cell_vs_cell.png", width=6, height=4)
+
+# log plot ; no zero values---
+TEXTSIZE=15
+ggplot(data=filter(scatter_2_cells,x>0,y>0), aes(x=x,y=y))+
+  geom_point(aes(colour='Scatter'))+
+  geom_line(data=fitline_df, aes(x=x_fitted,y=y_fitted,colour='Trendline incl 0'))+
+  geom_line(data=fitline_df3, aes(x=x_fitted,y=y_fitted,colour='Trendline excl 0'))+
+  coord_trans(x="log10",y="log10")+
+  theme(legend.position="bottom",
+        text = element_text(size=TEXTSIZE),
+        axis.text = element_text(size=TEXTSIZE),
+        plot.title = element_text(size=TEXTSIZE))+
+  ggtitle(paste("Gene expression cell ", toString(ID1)," vs ", toString(ID2), " (selection; zero values genes ommitted)
+                Points w/ 2 positive values = ", toString(overlap_of_postives), " of " , toString(nr_genes_sel_data)))+
+  xlab(paste("Cell ",toString(ID1))) + ylab(paste("Cell ",toString(ID2)))+
+  scale_colour_manual(name="Key", 
+                      values=c("black", "red", "blue"),
+                      breaks=c("Scatter", "Trendline incl 0", "Trendline excl 0"))
+ggsave("./plots/data_exploration_scatter_cell_vs_cell_loglog.pdf", width=6, height=4)
+ggsave("./plots/data_exploration_scatter_cell_vs_cell_loglog.png", width=6, height=4)
+
+

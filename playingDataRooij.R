@@ -3,10 +3,13 @@
 # Playing around with Van Rooij datasets (Anne/Bas)
 # See also "./plots/data_exploration.R" for more plots
 
+# set working directory to directory of scripts
+setwd('/Users/m.wehrens/Documents/git_repos/MW_playing/')
+
 # Use install.packages("tidyverse") if library is not installed
 library('tidyverse')
 library('reshape2')
-fileName = '/Users/m.wehrens/Data/HCM SCS/JE1_TranscriptCounts.tsv'
+fileName = 'JE1_TranscriptCounts.tsv'
 my_test_data <- read.table(fileName, header=T, row.names=1, sep="\t")
 
 #boxplot(split(world1$literacy,world1$cont),main=Literacy by Continent')
@@ -50,18 +53,25 @@ my_test_data_binary<-my_test_data>0
 positives_per_cell <- colSums(my_test_data_binary)
 positives_per_gene <- rowSums(my_test_data_binary)
 
-# Create a dataset which has at least 100 observations for each cell
-my_test_data_selection = slice(my_test_data, which(as.integer(positives_per_cell>100) %in% 1)  )
+# Create selection criterion for cells (should have 100 positives)
+indices_to_select = which(as.integer(positives_per_cell>100) %in% 1)
+
+# Now select the cells
+my_test_data_selection=my_test_data[,indices_to_select]
 
 # Let's look at an arbitrary correlation between two cells ------------------------------------
 
 ID1<-1
 ID2<-2
 
-cell1_values <-my_test_data_selection[,ID1]
-cell2_values <-my_test_data_selection[,ID2]
+cell1_values <- my_test_data_selection[,ID1]
+cell2_values <- my_test_data_selection[,ID2]
 
-neitherzero=(as.numeric(slice(my_test_data_selection,ID1)>0))&(as.numeric(slice(my_test_data_selection,ID2)>0))
+overlap_of_postives = sum(as.numeric(cell1_values>0 & cell1_values>0))
+nr_genes_sel_data = nrow(my_test_data_selection) # number of genes in selection
+
+neitherzero_idxs=which((cell1_values>0 & cell1_values>0))
+# (as.numeric(slice(my_test_data_selection,ID1)>0))&(as.numeric(slice(my_test_data_selection,ID2)>0))
 
 cor_cells = cor(cell1_values,cell2_values)
 cov_cells = cov(cell1_values,cell2_values)
@@ -72,33 +82,53 @@ lsf_a = mean(cell2_values)-lsf_b*mean(cell1_values)
 x_fitted = c(1,max(cell1_values))
 y_fitted = lsf_b*x_fitted+lsf_a
   
-scatter_2_cells = data.frame(x=cell1_values,y=cell2_values,x_fitted=x_fitted,y_fitted=y_fitted)
+# Create dataframes for plotting
+scatter_2_cells = data.frame(x=cell1_values,y=cell2_values)
+fitline_df      = data.frame(x_fitted=x_fitted,y_fitted=y_fitted)
+
+# Now also fit using standard function
+my_lsf2 = lm(cell2_values ~ cell1_values)
+lsf_a2 = my_lsf$coefficients[2]
+lsf_b2 = my_lsf$coefficients[1]
+# Now see what happens if we base fit on overlap only
+my_lsf3 = lm(cell2_values[neitherzero_idxs] ~ cell1_values[neitherzero_idxs])
+lsf_a3 = my_lsf$coefficients[2]
+lsf_b3 = my_lsf$coefficients[1]
+# Create params to plot again
+x_fitted3 = c(1,max(cell1_values))
+y_fitted3 = lsf_b3*x_fitted3+lsf_a3
+fitline_df3      = data.frame(x_fitted=x_fitted3,y_fitted=y_fitted3)
+
+neitherzero_idxs
 
 # normal plot (including zero values) ---
 TEXTSIZE=15
 ggplot(data=scatter_2_cells, aes(x=x,y=y))+
   geom_point()+
-  geom_line(aes(x=x_fitted,y=y_fitted))+
+  geom_line(data=fitline_df, aes(x=x_fitted,y=y_fitted))+
+  geom_line(data=fitline_df3, aes(x=x_fitted,y=y_fitted),color='red')+
   theme(legend.position="none",
         text = element_text(size=TEXTSIZE),
         axis.text = element_text(size=TEXTSIZE),
         plot.title = element_text(size=TEXTSIZE))+
-  ggtitle(paste("Gene expression cell ", toString(ID1)," vs ", toString(ID2)))+
-  xlab(paste("Cell ",toString(ID1))) + ylab(paste("gene ",toString(ID1)))
+  ggtitle(paste("Gene expression cell ", toString(ID1)," vs ", toString(ID2), " (selection)
+                 Points w/ 2 positive values = ", toString(overlap_of_postives), " of " , toString(nr_genes_sel_data)))+
+  xlab(paste("Cell ",toString(ID1))) + ylab(paste("Cell ",toString(ID1)))
 
-# log plot ---
+# log plot ; no zero values---
 TEXTSIZE=15
 ggplot(data=filter(scatter_2_cells,x>0,y>0), aes(x=x,y=y))+
   geom_point()+
-  geom_line(aes(x=x_fitted,y=y_fitted))+
+  geom_line(data=fitline_df, aes(x=x_fitted,y=y_fitted))+
+  geom_line(data=fitline_df3, aes(x=x_fitted,y=y_fitted),color='red')+
   coord_trans(x="log10",y="log10")+
   theme(legend.position="none",
         text = element_text(size=TEXTSIZE),
         axis.text = element_text(size=TEXTSIZE),
         plot.title = element_text(size=TEXTSIZE))+
-  ggtitle(paste("Gene expression cell ", toString(ID1)," vs ", toString(ID2), "(R = ",toString(round(cor_cells,2)),")"))+
-  xlab(paste("Cell ",toString(ID1))) + ylab(paste("gene ",toString(ID1)))
-
+  ggtitle(paste("Gene expression cell ", toString(ID1)," vs ", toString(ID2), " (selection; zero values genes ommitted)
+                Points w/ 2 positive values = ", toString(overlap_of_postives), " of " , toString(nr_genes_sel_data)))+
+  xlab(paste("Cell ",toString(ID1))) + ylab(paste("Cell ",toString(ID1)))
 
 # (Work in progress) ==================================================================
 # I need to look at the code below 
