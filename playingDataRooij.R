@@ -235,10 +235,62 @@ ggplot(data=my_tsne_df)+
 
 # Now it would be nice if we could determine the optimal cluster size ------------------------------------------
 # Grun2015 uses the gap statistic for this
+# See also https://www.rdocumentation.org/packages/cluster/versions/2.0.7-1/topics/clusGap
+# And /Users/m.wehrens/Documents/Naslag/data_science/clustering/K-means Cluster Analysis · UC Business Analytics R Programming Guide.pdf
 
+MYKMAX=30
+my_gap_stat <- clusGap(x=res_df, FUNcluster = kmeans, K.max = MYKMAX, B =100)
 
+my_gap_stat_df <- data.frame(my_gap_stat$Tab, x=seq(1,MYKMAX))
 
+# According to Grun2015 first local maximum provides optimal clustering number
+gaps <- my_gap_stat_df$gap
+differences <- gaps[seq(2,length(gaps))]-gaps[seq(1,length(gaps)-1)]
+local_going_down <- which(differences<0)
+first_local_max = integer(MYKMAX)
+first_local_max[local_going_down[1]]=1
+my_gap_stat_df=mutate(my_gap_stat_df,first_local_max = as.factor(first_local_max))
 
+# Now the standard deviation method would also be nice
+# But seems a bit useless with these low stdvevs
+# Let's try anyways.. 
+gaps <- my_gap_stat_df$gap
+SE   <- my_gap_stat_df$SE.sim
+level_to_reach <- gaps[2:length(gaps)]-2*SE[2:length(SE)]
+treshold_exceeded <- which(gaps[1:(length(gaps)-1)]>level_to_reach)
+point_idx <- treshold_exceeded[1]
+df_clust_sz <- data_frame(x=point_idx,y=gaps[point_idx])
+
+# Now show statistic
+TEXTSIZE=15
+ggplot(data=my_gap_stat_df,aes(x=x,y=gap))+
+  geom_point(aes(color=first_local_max),size=3)+
+  geom_line()+
+  geom_errorbar(aes(ymin=gap-SE.sim, ymax=gap+SE.sim), width=.2)+
+  ggtitle('Gap statistic on clustering of correlation matrix')+
+  xlab('Number of clusters')+ylab('Gap score')+
+  geom_point(data=df_clust_sz, aes(x=x,y=y), size=10, shape=1)+
+  scale_colour_manual(name="Key", 
+                      values=c("black", "red"),
+                      breaks=c("0","1"))+
+  theme(legend.position="none",
+        text = element_text(size=TEXTSIZE),
+        axis.text = element_text(size=TEXTSIZE),
+        plot.title = element_text(size=TEXTSIZE))
+
+# Now also plot the cells themselves using tSNE and PCA ==================================================
+
+library("Rtsne")
+
+my_tsne = Rtsne(X=res_df)
+# Put the values of each sample in terms of the principal components in dataframe
+my_tsne_df = as.data.frame(my_tsne$Y)
+
+# now plot these points again, also showing the clusters
+ggplot(data=my_tsne_df)+
+  geom_point(aes(x=V1,y=V2, color=cluster_assignments))+
+  scale_color_manual(values=col_vector)+
+  ggtitle('Correlation matrix converted to points (t-SNE projection)')
 
 
 
