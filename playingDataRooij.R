@@ -1,6 +1,6 @@
 
 
-# Playing around with Van Rooij datasets (Anne/Bas)
+# Playing around with Van Rooij datasets (Anne/Bas) ================================
 # See also "./plots/data_exploration.R" for more plots
 
 # set working directory to directory of scripts
@@ -238,9 +238,11 @@ ggplot(data=my_tsne_df)+
 # See also https://www.rdocumentation.org/packages/cluster/versions/2.0.7-1/topics/clusGap
 # And /Users/m.wehrens/Documents/Naslag/data_science/clustering/K-means Cluster Analysis · UC Business Analytics R Programming Guide.pdf
 
-MYKMAX=30
-my_gap_stat <- clusGap(x=res_df, FUNcluster = kmeans, K.max = MYKMAX, B =100)
+library("cluster")
 
+MYKMAX=30
+# Run algorithm and put part of output in different format
+my_gap_stat <- clusGap(x=res_df, FUNcluster = kmeans, K.max = MYKMAX, B =100)
 my_gap_stat_df <- data.frame(my_gap_stat$Tab, x=seq(1,MYKMAX))
 
 # According to Grun2015 first local maximum provides optimal clustering number
@@ -278,19 +280,69 @@ ggplot(data=my_gap_stat_df,aes(x=x,y=gap))+
         axis.text = element_text(size=TEXTSIZE),
         plot.title = element_text(size=TEXTSIZE))
 
+# Now that we have determined the optimal cluster size run kmeans again -----------------------------------
+
+myclusters = kmeans(x=res_df,centers=point_idx[1])
+cluster_assignments = factor(myclusters$cluster)
+
 # Now also plot the cells themselves using tSNE and PCA ==================================================
 
 library("Rtsne")
 
-my_tsne = Rtsne(X=res_df)
-# Put the values of each sample in terms of the principal components in dataframe
+# tSNE
+my_tsne = Rtsne(X=t(as.matrix(my_test_data_selection)))
+# Put the values of each sample in terms of the projected vectors in dataframe
 my_tsne_df = as.data.frame(my_tsne$Y)
 
+# PCA
+mypca = prcomp(x=t(my_test_data_selection))
+# Put the values of each sample in terms of the principal components in dataframe
+mypca_df = as.data.frame(mypca$x)
+
+# now just plot those points
++
+  
+
 # now plot these points again, also showing the clusters
-ggplot(data=my_tsne_df)+
-  geom_point(aes(x=V1,y=V2, color=cluster_assignments))+
+library("gridExtra")  
+  
+p1<-ggplot(data=my_tsne_df)+
+  geom_point(aes(x=V1,y=V2), color=cluster_assignments)+
   scale_color_manual(values=col_vector)+
-  ggtitle('Correlation matrix converted to points (t-SNE projection)')
+  ggtitle('t-SNE cells \nK-means clustering of corr')
+p2<-ggplot(data=mypca_df)+
+  geom_point(aes(x=PC1,y=PC2), color=cluster_assignments)+
+  scale_color_manual(values=col_vector)+
+  #coord_trans(y="log2", x="log2")
+  ggtitle('PCA cells \nK-means clustering of corr')
+grid.arrange(p1,p2,nrow=1)
+
+# Now obviously we can program this a bit more efficiently ----------------------
+source("./my_functions_clustering.R")
+
+# calculate gap stats for different sizes
+my_gap_stat <- clusGap(x=my_tsne_df, FUNcluster = kmeans, K.max = MYKMAX, B =100)
+my_gap_stat_df <- data.frame(my_gap_stat$Tab, x=seq(1,MYKMAX))
+# Use custom functions to find optimal size and plot gap stat
+optimal_size <- get_optimal_cluster_size(my_gap_stat_df)
+plot_gap_stat(my_gap_stat_df,optimal_size)
+
+# Now apply the clustering method
+myclusters = kmeans(mypca_df,centers=optimal_size[2])
+cluster_assignments_PCA = factor(myclusters$cluster)
+
+# Plot again
+p1<-ggplot(data=my_tsne_df)+
+  geom_point(aes(x=V1,y=V2), color=cluster_assignments)+
+  scale_color_manual(values=col_vector)+
+  ggtitle('t-SNE cells \nK-means clustering of corr')
+p2<-ggplot(data=mypca_df)+
+  geom_point(aes(x=PC1,y=PC2), color=cluster_assignments)+
+  scale_color_manual(values=col_vector)+
+  #coord_trans(y="log2", x="log2")
+  ggtitle('PCA cells \nK-means clustering of corr')
+grid.arrange(p1,p2,nrow=1)
+
 
 
 
