@@ -37,3 +37,113 @@ ggplot(data=freq_frame, mapping=aes(x=centers, y=countsp1)) +
         plot.title = element_text(size=TEXTSIZE)) +
   scale_x_continuous(breaks = seq(0,150, by = 10)) +
   scale_y_continuous(breaks = 10^seq(0,5, by = 1),labels = comma)
+
+
+
+
+
+
+########################################################################################################
+########################################################################################################
+
+
+
+
+
+
+
+
+# Now, R also has t-SNE and PCA algorithms that we can use from library ---------------------------------------------
+# Let's use that for projection
+library("Rtsne")
+
+# Apply the clustering method
+myclusters = kmeans(x=res_df,centers=point_idx[1])
+cluster_assignments = factor(myclusters$cluster)
+
+# tSNE
+my_tsne_corr = Rtsne(X=as.matrix(res_df))
+# Put the values of each sample in terms of the projected vectors in dataframe
+my_tsne_corr_df = as.data.frame(my_tsne$Y)
+
+# PCA
+mypca_corr = prcomp(x=res_df)
+# Put the values of each sample in terms of the principal components in dataframe
+mypca_corr_df = as.data.frame(mypca$x)
+
+# Plot again
+p1<-ggplot(data=my_tsne_corr_df)+
+  geom_point(aes(x=V1,y=V2), color=cluster_assignments)+
+  scale_color_manual(values=col_vector)+
+  ggtitle('t-SNE corr matrix \nK-means clustering of corr')
+p2<-ggplot(data=mypca_corr_df)+
+  geom_point(aes(x=PC1,y=PC2), color=cluster_assignments)+
+  scale_color_manual(values=col_vector)+
+  #coord_trans(y="log2", x="log2")
+  ggtitle('PCA corr matrix \nK-means clustering of corr')
+grid.arrange(p1,p2,nrow=1)
+
+# now plot these points again, also showing the clusters
+ggplot(data=my_tsne_df)+
+  geom_point(aes(x=V1,y=V2, color=cluster_assignments))+
+  scale_color_manual(values=col_vector)+
+  ggtitle('Correlation matrix converted to points (t-SNE projection)')
+
+# Note that this is of course using the correlation functions as input, which might explains the 
+# pattern in the data
+
+
+
+# Run clustering  ------------------------------------------ ------------------------------------------
+
+# Now apply the clustering method
+myclusters = kmeans(x=res_df,centers=point_idx[1])
+cluster_assignments = factor(myclusters$cluster)
+
+# Plot again
+p1<-ggplot(data=my_tsne_df)+
+  geom_point(aes(x=V1,y=V2), color=cluster_assignments)+
+  scale_color_manual(values=col_vector)+
+  ggtitle('t-SNE cells \nK-means clustering of corr')
+p2<-ggplot(data=mypca_df)+
+  geom_point(aes(x=PC1,y=PC2), color=cluster_assignments)+
+  scale_color_manual(values=col_vector)+
+  #coord_trans(y="log2", x="log2")
+  ggtitle('PCA cells \nK-means clustering of corr')
+grid.arrange(p1,p2,nrow=1)
+
+# Now that we have determined the optimal cluster size run kmeans again -----------------------------------
+
+
+
+# Now also plot the cells themselves using tSNE and PCA ==================================================
+
+library("Rtsne")
+
+# tSNE
+my_tsne = Rtsne(X=t(as.matrix(my_test_data_selection)))
+# Put the values of each sample in terms of the projected vectors in dataframe
+my_tsne_df = as.data.frame(my_tsne$Y)
+
+# PCA
+mypca = prcomp(x=t(my_test_data_selection))
+# Put the values of each sample in terms of the principal components in dataframe
+mypca_df = as.data.frame(mypca$x)
+
+# now just plot those points
++
+  
+  
+  # now plot these points again, also showing the clusters
+  library("gridExtra")  
+
+p1<-ggplot(data=my_tsne_df)+
+  geom_point(aes(x=V1,y=V2), color=cluster_assignments)+
+  scale_color_manual(values=col_vector)+
+  ggtitle('t-SNE cells \nK-means clustering of corr')
+p2<-ggplot(data=mypca_df)+
+  geom_point(aes(x=PC1,y=PC2), color=cluster_assignments)+
+  scale_color_manual(values=col_vector)+
+  #coord_trans(y="log2", x="log2")
+  ggtitle('PCA cells \nK-means clustering of corr')
+grid.arrange(p1,p2,nrow=1)

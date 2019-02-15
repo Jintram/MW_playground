@@ -2,24 +2,34 @@ library("cluster")
 
 
 get_optimal_cluster_size<-function(my_gap_stat_df)
+# About gap statistic
+# Grun2015 uses the gap statistic for this
+# See also https://www.rdocumentation.org/packages/cluster/versions/2.0.7-1/topics/clusGap
+# And /Users/m.wehrens/Documents/Naslag/data_science/clustering/K-means Cluster Analysis · UC Business Analytics R Programming Guide.pdf
+  #
+  # Note that this function is a bit redundant because clusGap can automatically determine max cluster size
 {
 
 # Organize important gap values
 gaps <- my_gap_stat_df$gap
 SE   <- my_gap_stat_df$SE.sim
   
+# This is same as "firstmax"
 # According to Grun2015 first local maximum provides optimal clustering number
 differences <- gaps[seq(2,length(gaps))]-gaps[seq(1,length(gaps)-1)]
 local_going_down <- which(differences<0)
 point_idx_localmax <- local_going_down[1] 
   
+# This is same as "2x_Tibs2001SEmax"
 # Now the standard deviation method would also be nice
-level_to_reach <- gaps[2:length(gaps)]-2*SE[2:length(SE)]
-treshold_exceeded <- which(gaps[1:(length(gaps)-1)]>level_to_reach)
-point_idx_std <- treshold_exceeded[1]
+lower_treshold <- gaps[2:length(gaps)]-2*SE[2:length(SE)]
+#upper_trashold <- gaps[2:length(gaps)]+4*SE[2:length(SE)]
+above_next_treshold <- which(gaps[1:(length(gaps)-1)]>lower_treshold)# & gaps[1:(length(gaps)-1)]<lower_treshold)
+# Might nog work though
+point_idx_std <- above_next_treshold[1]
 
 optimal_size <- c(point_idx_localmax, point_idx_std)
-names(optimal_size) <- c("localmax_method","stdev_method")
+names(optimal_size) <- c("firstmax","Tibs2001SEmax")
 return(optimal_size)
 }
 
