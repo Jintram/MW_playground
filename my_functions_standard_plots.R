@@ -43,21 +43,9 @@ plot_scatter_w_highlighted_clusters_condition<-function(df_toplot,x,y,cluster_as
 }
 
 plot_scatter_w_highlighted_clusters_condition_exprgrad<-function(df_toplot,x,y,cluster_assignments_varname,conditions_varname,condition_names,condition_markers,
-                                                        myxlabel,myylabel,mytitle,col_vector,selected_gene_expression_varname) {
+                                                        myxlabel,myylabel,mytitle,col_vector,selected_gene_expression_varname,savelocation) {
   
   TEXTSIZE=15
-  
-  # p1<-ggplot(data=df_toplot)+
-  #   geom_point(aes_string(x=x,y=y,color=cluster_assignments_varname,shape=conditions_varname,size='selected_gene_expression'),size=2,alpha=.8)+#, color=cell_123_array)+
-  #   scale_shape_manual(values=condition_markers,labels=condition_names)+
-  #   ggtitle(mytitle)+
-  #   xlab(myxlabel)+ylab(myylabel)+
-  #   scale_color_manual(values=col_vector)+
-  #   theme(#legend.position="none",
-  #     text = element_text(size=TEXTSIZE),
-  #     axis.text = element_text(size=TEXTSIZE),
-  #     plot.title = element_text(size=TEXTSIZE),
-  #     legend.text = element_text(size=TEXTSIZE))
   
   # The gene expression plot
   p1<-ggplot(data=df_toplot)+
@@ -115,6 +103,32 @@ plot_scatter_w_highlighted_clusters_condition_exprgrad<-function(df_toplot,x,y,c
   dev.off()
   
   return(list(p1,p2))
+  
+}
+
+plot_scatter_gene_expression<-function(df_toplot,x,y,cluster_assignments_varname,conditions_varname,condition_names,condition_markers,
+                                                                 myxlabel,myylabel,mytitle,col_vector,selected_gene_expression_varname) {
+  
+  TEXTSIZE=15
+  
+  # The gene expression plot
+  p1<-ggplot(data=df_toplot)+
+    geom_point(aes_string(x=x,y=y,
+                          color=selected_gene_expression_varname, 
+                          shape=conditions_varname
+                          ),
+               size=2,alpha=0.8)+
+    scale_color_gradientn(colours = terrain.colors(7))+
+    scale_shape_manual(values=condition_markers,labels=condition_names)+
+    ggtitle(mytitle)+
+    xlab(myxlabel)+ylab(myylabel)+
+    theme(#legend.position="none",
+      text = element_text(size=TEXTSIZE),
+      axis.text = element_text(size=TEXTSIZE),
+      plot.title = element_text(size=TEXTSIZE),
+      legend.text = element_text(size=TEXTSIZE))
+  
+  return(p1)
   
 }
 

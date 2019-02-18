@@ -85,8 +85,9 @@ ggplot(gene_counts_df, aes(factor(dataset_id), counts)) +
     axis.text.x = element_text(angle = 90, hjust = 1, size=TEXTSIZE))
 
 
-
+# ==================================================================================================
 # Plotting dimensionality-reduced data, giving markup according to condition =======================
+# ==================================================================================================
 
 # Create cluster assignments in factor variable
 NR_CONDITIONS=2
@@ -124,10 +125,27 @@ p_tsne_cond_clust<-plot_scatter_w_highlighted_clusters_condition(df_tsne,'V1','V
 ggsave(paste(directory_with_data,"plots_MW/tsne_highlights_cond_clust.pdf",sep=""), width=10, height=6)
 ggsave(paste(directory_with_data,"plots_MW/tsne_highlights_cond_clust.png",sep=""), width=10, height=6)
 
-# Making a plot with gradient according to gene expression =======================
-# You need to have run the previous section to do this
 
+# ==================================================================================================
+# Making a plot with gradient according to gene expression =========================================
+# You need to have run the previous section to do this =============================================
+# ==================================================================================================
+
+celltype_for_these_markers <- 'Epicardial'
 list_of_interesting_genes <- c('WT1','TBX18','ADLH1A2','ZO1','BNC1','ANXA8','K18','KRT8','KRT19','GPM6A','UP1KB','CDH1','UPK3B')
+
+celltype_for_these_markers <- 'Fat'
+list_of_interesting_genes <- c('PPARG','PPARGC1A','UCP1','EDNRB','CEBPA','CEBPB','EBF3','RORA','FABP4','PLIN','PDGFRA','ADIPOQ','LEP','DLK1','APOE','LIPE','GLUT4','KLF5')	
+
+celltype_for_these_markers <- 'Fibroblast'
+list_of_interesting_genes <- c('FN1','POSTN','VIM','ACTA2','COL1A1','COL1A2','COL2A1','COL9A1','CDH2','FSTL1','COL3A1','GSN','FBLN2','SPARC','MMP','DDR2','FSP1','PDGFRA','THY1','FLNA','KLF5')
+
+celltype_for_these_markers <- 'Differentatiors'
+list_of_interesting_genes <- c('TFAP2A','TFAP2B','TFAP2C','TFAP2D','TFAP2E')
+
+celltype_for_these_markers <- 'Desmosome'
+list_of_interesting_genes <- c('PKP2','DSP','DSC2','DSG2','JUP','GJA1')
+
 freq_df<-data.frame(centers = numeric(), counts = numeric(), my_gene_nr=factor(levels=seq(1,length(list_of_interesting_genes))))
 found_genes<-list()
 for (ii in seq(1,length(list_of_interesting_genes))) {
@@ -159,13 +177,33 @@ for (ii in seq(1,length(list_of_interesting_genes))) {
 
 }
 
-ggplot()+
+# Create a combined histogram plot
+TEXTSIZE=15
+p_overview_hist<-ggplot()+
   geom_line(data=freq_df,stat="identity", mapping=aes(x=centers, y=counts,color=my_gene_nr))+
-  scale_color_manual(values=col_vector,labels=found_genes)
+  scale_color_manual(values=col_vector,labels=found_genes)+
+  ggtitle(paste('Gene expression for ',celltype_for_these_markers,' markers'))+
+  theme(#legend.position="none",
+    text = element_text(size=TEXTSIZE),
+    axis.text = element_text(size=TEXTSIZE),
+    plot.title = element_text(size=TEXTSIZE),
+    legend.text = element_text(size=TEXTSIZE))
+p_overview_hist
+# Save
+ggsave(paste(directory_with_data,'plots_MW/histogram_gene_expression2_',celltype_for_these_markers,'.pdf',sep=""), width=10, height=6)
+ggsave(paste(directory_with_data,'plots_MW/histogram_gene_expression2_',celltype_for_these_markers,'.png',sep=""), width=10, height=6)
+
 
 # OK now go ahead -----------------
 
-GENE_OF_INTEREST<-3625
+GENE_OF_INTEREST<-3625 # KRT19__chr17 (epi)
+GENE_OF_INTEREST<-371 # APOE__chr19 (fat)
+GENE_OF_INTEREST<-5063 # PDGFRA__chr4 (fibro)
+GENE_OF_INTEREST<-1480 # COL1A1__chr17 (fibro)
+GENE_OF_INTEREST<-7216 # TFAP2A__chr6
+GENE_OF_INTEREST<-1994 # DSG2__chr18
+
+name_of_this_gene<-gene_names[GENE_OF_INTEREST]
 
 all_gene_expression <- groupedSCS$Combined@fdata
 selected_gene_expression<-all_gene_expression[GENE_OF_INTEREST,]
@@ -179,30 +217,40 @@ df_tsne <- data_frame(V1=groupedSCS$Combined@tsne$V1,
 #or use mutate(df_tsne,)? I think that's not convenient when we update the parameter
 
 # Make the scatter plots
-savelocation<-paste(directory_with_data,"plots_MW/tsne_combined_cluster_genexpr.pdf",sep="")
+savelocation<-paste(directory_with_data,'plots_MW/tsne_combined_cluster_genexpr_',celltype_for_these_markers,'_',GENE_OF_INTEREST,'.pdf',sep="")
 ppplist<-
   plot_scatter_w_highlighted_clusters_condition_exprgrad(
     df_tsne,'V1','V2','cluster_assignments','condition_factors',
     condition_names=shortdatasetnames,condition_markers=CONDITION_MARKERS,
-    'tSNE1','tSNE2','Gene expression space',col_vector,
+    'tSNE1','tSNE2',
+    paste('Expression of ',name_of_this_gene,' (',celltype_for_these_markers,')', sep=''),
+    col_vector,
     selected_gene_expression_varname='selected_gene_expression',
     savelocation=savelocation
     )
 
 # Retrieve the different subplots
-p_tsne_cond_clust_normal<-ppplist[1]
-p_tsne_cond_clust_expr<-ppplist[2]
+p_tsne_cond_clust_expr<-ppplist[1]
+p_tsne_cond_clust_normal<-ppplist[2]
 
-# Save 'm
-ggsave(paste(directory_with_data,"plots_MW/tsne_highlights_cond_clust_grad.pdf",sep=""), width=10, height=6)
-ggsave(paste(directory_with_data,"plots_MW/tsne_highlights_cond_clust_grad.png",sep=""), width=10, height=6)
+# Save gradient only plot
+p_tsne_cond_clust_expr
+ggsave(paste(directory_with_data,'plots_MW/tsne_gene_expression2_',celltype_for_these_markers,'_',GENE_OF_INTEREST,'.pdf',sep=""), width=10, height=6)
+ggsave(paste(directory_with_data,'plots_MW/tsne_gene_expression2_',celltype_for_these_markers,'_',GENE_OF_INTEREST,'.png',sep=""), width=10, height=6)
 
 
-# plotting introduced by bas ===============================================================
-input <- groupedSCS$Combined@tsne
-plot(input)
-cond1 <- input[grepl("HUB-AK-003_HLWF5BGX9_S1_R2",rownames(input))||
-                 grepl("HUB-AK-004_HLWF5BGX9_S1_R2",rownames(input)),]
-points(cond1,lty=21,bg="red",col="red")
+# Additional standard plot as people made it before ----------------------------------------
+CONDITION_MARKERS <- c(15,16)
+plot_scatter_gene_expression(
+  df_tsne,'V1','V2','cluster_assignments','condition_factors',
+  condition_names=shortdatasetnames,condition_markers=CONDITION_MARKERS,
+  'tSNE1','tSNE2',
+  paste('Expression of ',name_of_this_gene,' (',celltype_for_these_markers,')',sep=''),
+  col_vector,
+  selected_gene_expression_varname='selected_gene_expression'
+)
+ggsave(paste(directory_with_data,'plots_MW/tsne_gene_expression_',celltype_for_these_markers,'_',GENE_OF_INTEREST,'.pdf',sep=""), width=10, height=6)
+ggsave(paste(directory_with_data,'plots_MW/tsne_gene_expression_',celltype_for_these_markers,'_',GENE_OF_INTEREST,'.png',sep=""), width=10, height=6)
+
 
 
