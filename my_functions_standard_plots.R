@@ -43,24 +43,25 @@ plot_scatter_w_highlighted_clusters_condition<-function(df_toplot,x,y,cluster_as
 }
 
 plot_scatter_w_highlighted_clusters_condition_exprgrad<-function(df_toplot,x,y,cluster_assignments_varname,conditions_varname,condition_names,condition_markers,
-                                                        myxlabel,myylabel,mytitle,col_vector) {
+                                                        myxlabel,myylabel,mytitle,col_vector,selected_gene_expression_varname) {
   
   TEXTSIZE=15
   
-  p1<-ggplot(data=df_toplot)+
-    geom_point(aes_string(x=x,y=y,color=cluster_assignments_varname,shape=conditions_varname,size='selected_gene_expression'),size=2,alpha=.8)+#, color=cell_123_array)+
-    scale_shape_manual(values=condition_markers,labels=condition_names)+
-    ggtitle(mytitle)+
-    xlab(myxlabel)+ylab(myylabel)+
-    scale_color_manual(values=col_vector)+
-    theme(#legend.position="none",
-      text = element_text(size=TEXTSIZE),
-      axis.text = element_text(size=TEXTSIZE),
-      plot.title = element_text(size=TEXTSIZE),
-      legend.text = element_text(size=TEXTSIZE))
+  # p1<-ggplot(data=df_toplot)+
+  #   geom_point(aes_string(x=x,y=y,color=cluster_assignments_varname,shape=conditions_varname,size='selected_gene_expression'),size=2,alpha=.8)+#, color=cell_123_array)+
+  #   scale_shape_manual(values=condition_markers,labels=condition_names)+
+  #   ggtitle(mytitle)+
+  #   xlab(myxlabel)+ylab(myylabel)+
+  #   scale_color_manual(values=col_vector)+
+  #   theme(#legend.position="none",
+  #     text = element_text(size=TEXTSIZE),
+  #     axis.text = element_text(size=TEXTSIZE),
+  #     plot.title = element_text(size=TEXTSIZE),
+  #     legend.text = element_text(size=TEXTSIZE))
   
+  # The gene expression plot
   p1<-ggplot(data=df_toplot)+
-    geom_point(aes_string(x=x,y=y,size='selected_gene_expression',color='selected_gene_expression'))+
+    geom_point(aes_string(x=x,y=y,size=selected_gene_expression_varname,color=selected_gene_expression_varname))+
     scale_color_gradient(low="white", high="black")+
     theme(
       panel.background = element_rect(fill = "transparent") # bg of the panel
@@ -69,7 +70,16 @@ plot_scatter_w_highlighted_clusters_condition_exprgrad<-function(df_toplot,x,y,c
       , panel.grid.minor = element_blank() # get rid of minor grid
       , legend.background = element_rect(fill = "transparent") # get rid of legend bg
       , legend.box.background = element_rect(fill = "transparent") # get rid of legend panel bg
-    )
+    )+
+    ggtitle(mytitle)+
+    xlab(myxlabel)+ylab(myylabel)+
+    theme(#legend.position="none",
+      text = element_text(size=TEXTSIZE),
+      axis.text = element_text(size=TEXTSIZE),
+      plot.title = element_text(size=TEXTSIZE),
+      legend.text = element_text(size=TEXTSIZE))
+  
+  # The usual clustered scatter plot
   p2<-ggplot(data=df_toplot)+
     geom_point(aes_string(x=x,y=y,color=cluster_assignments_varname,shape=conditions_varname),size=2,alpha=.8)+#, color=cell_123_array)+
     scale_shape_manual(values=condition_markers,labels=condition_names)+
@@ -81,10 +91,7 @@ plot_scatter_w_highlighted_clusters_condition_exprgrad<-function(df_toplot,x,y,c
       , panel.grid.minor = element_blank() # get rid of minor grid
       , legend.background = element_rect(fill = "transparent") # get rid of legend bg
       , legend.box.background = element_rect(fill = "transparent") # get rid of legend panel bg
-    )
-  
-    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+    )+
     ggtitle(mytitle)+
     xlab(myxlabel)+ylab(myylabel)+
     theme(#legend.position="none",
@@ -93,12 +100,21 @@ plot_scatter_w_highlighted_clusters_condition_exprgrad<-function(df_toplot,x,y,c
       plot.title = element_text(size=TEXTSIZE),
       legend.text = element_text(size=TEXTSIZE))
   
+  # Combined plot needs to be saved while writing it
+  # https://stackoverflow.com/questions/29708821/how-to-save-a-grid-plot-in-r
+  pdf(savelocation, height = 6, width = 6, paper = "special")
+  
+  # Create the combined plot
+  # https://stackoverflow.com/questions/11508902/plotting-discrete-and-continuous-scales-in-same-ggplot
   grid.newpage()
   pushViewport( viewport( layout = grid.layout( 1 , 1 , widths = unit( 1 , "npc" ) ) ) ) 
   print( p1 + theme(legend.position="none") , vp = viewport( layout.pos.row = 1 , layout.pos.col = 1 ) )
   print( p2 + theme(legend.position="none") , vp = viewport( layout.pos.row = 1 , layout.pos.col = 1 ) )
   
-  return(p)
+  # end of saving
+  dev.off()
+  
+  return(list(p1,p2))
   
 }
 

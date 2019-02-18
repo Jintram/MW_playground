@@ -178,11 +178,22 @@ df_tsne <- data_frame(V1=groupedSCS$Combined@tsne$V1,
                       selected_gene_expression=as.numeric(selected_gene_expression))
 #or use mutate(df_tsne,)? I think that's not convenient when we update the parameter
 
-# Plot the scatter plot
-p_tsne_cond_clust<-plot_scatter_w_highlighted_clusters_condition_exprgrad(df_tsne,'V1','V2','cluster_assignments','condition_factors',
-                                                                 condition_names=shortdatasetnames,condition_markers=CONDITION_MARKERS,
-                                                                 'tSNE1','tSNE2','Gene expression space',col_vector,
-                                                                 gene_expression='selected_gene_expression')
+# Make the scatter plots
+savelocation<-paste(directory_with_data,"plots_MW/tsne_combined_cluster_genexpr.pdf",sep="")
+ppplist<-
+  plot_scatter_w_highlighted_clusters_condition_exprgrad(
+    df_tsne,'V1','V2','cluster_assignments','condition_factors',
+    condition_names=shortdatasetnames,condition_markers=CONDITION_MARKERS,
+    'tSNE1','tSNE2','Gene expression space',col_vector,
+    selected_gene_expression_varname='selected_gene_expression',
+    savelocation=savelocation
+    )
+
+# Retrieve the different subplots
+p_tsne_cond_clust_normal<-ppplist[1]
+p_tsne_cond_clust_expr<-ppplist[2]
+
+# Save 'm
 ggsave(paste(directory_with_data,"plots_MW/tsne_highlights_cond_clust_grad.pdf",sep=""), width=10, height=6)
 ggsave(paste(directory_with_data,"plots_MW/tsne_highlights_cond_clust_grad.png",sep=""), width=10, height=6)
 
