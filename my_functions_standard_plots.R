@@ -22,6 +22,104 @@ plot_scatter_w_highlighted_clusters<-function(df_toplot,x,y,cluster_assignments,
   
 }
 
+plot_scatter_w_highlighted_clusters_condition<-function(df_toplot,x,y,cluster_assignments,conditions,condition_names,condition_markers,
+                                              myxlabel,myylabel,mytitle,col_vector) {
+  
+  TEXTSIZE=15
+  p<-ggplot(data=df_toplot)+
+    geom_point(aes_string(x=x,y=y,color=cluster_assignments,shape=conditions),size=2,alpha=.8)+#, color=cell_123_array)+
+    ggtitle(mytitle)+
+    xlab(myxlabel)+ylab(myylabel)+
+    scale_color_manual(values=col_vector)+
+    scale_shape_manual(values=condition_markers,labels=condition_names)+
+    theme(#legend.position="none",
+      text = element_text(size=TEXTSIZE),
+      axis.text = element_text(size=TEXTSIZE),
+      plot.title = element_text(size=TEXTSIZE),
+      legend.text = element_text(size=TEXTSIZE))
+  
+  return(p)
+  
+}
+
+plot_scatter_w_highlighted_clusters_condition_exprgrad<-function(df_toplot,x,y,cluster_assignments_varname,conditions_varname,condition_names,condition_markers,
+                                                        myxlabel,myylabel,mytitle,col_vector) {
+  
+  TEXTSIZE=15
+  
+  p1<-ggplot(data=df_toplot)+
+    geom_point(aes_string(x=x,y=y,color=cluster_assignments_varname,shape=conditions_varname,size='selected_gene_expression'),size=2,alpha=.8)+#, color=cell_123_array)+
+    scale_shape_manual(values=condition_markers,labels=condition_names)+
+    ggtitle(mytitle)+
+    xlab(myxlabel)+ylab(myylabel)+
+    scale_color_manual(values=col_vector)+
+    theme(#legend.position="none",
+      text = element_text(size=TEXTSIZE),
+      axis.text = element_text(size=TEXTSIZE),
+      plot.title = element_text(size=TEXTSIZE),
+      legend.text = element_text(size=TEXTSIZE))
+  
+  p1<-ggplot(data=df_toplot)+
+    geom_point(aes_string(x=x,y=y,size='selected_gene_expression',color='selected_gene_expression'))+
+    scale_color_gradient(low="white", high="black")+
+    theme(
+      panel.background = element_rect(fill = "transparent") # bg of the panel
+      , plot.background = element_rect(fill = "transparent", color = NA) # bg of the plot
+      , panel.grid.major = element_blank() # get rid of major grid
+      , panel.grid.minor = element_blank() # get rid of minor grid
+      , legend.background = element_rect(fill = "transparent") # get rid of legend bg
+      , legend.box.background = element_rect(fill = "transparent") # get rid of legend panel bg
+    )
+  p2<-ggplot(data=df_toplot)+
+    geom_point(aes_string(x=x,y=y,color=cluster_assignments_varname,shape=conditions_varname),size=2,alpha=.8)+#, color=cell_123_array)+
+    scale_shape_manual(values=condition_markers,labels=condition_names)+
+    scale_color_manual(values=col_vector)+
+    theme(
+      panel.background = element_rect(fill = "transparent") # bg of the panel
+      , plot.background = element_rect(fill = "transparent", color = NA) # bg of the plot
+      , panel.grid.major = element_blank() # get rid of major grid
+      , panel.grid.minor = element_blank() # get rid of minor grid
+      , legend.background = element_rect(fill = "transparent") # get rid of legend bg
+      , legend.box.background = element_rect(fill = "transparent") # get rid of legend panel bg
+    )
+  
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))+
+    ggtitle(mytitle)+
+    xlab(myxlabel)+ylab(myylabel)+
+    theme(#legend.position="none",
+      text = element_text(size=TEXTSIZE),
+      axis.text = element_text(size=TEXTSIZE),
+      plot.title = element_text(size=TEXTSIZE),
+      legend.text = element_text(size=TEXTSIZE))
+  
+  grid.newpage()
+  pushViewport( viewport( layout = grid.layout( 1 , 1 , widths = unit( 1 , "npc" ) ) ) ) 
+  print( p1 + theme(legend.position="none") , vp = viewport( layout.pos.row = 1 , layout.pos.col = 1 ) )
+  print( p2 + theme(legend.position="none") , vp = viewport( layout.pos.row = 1 , layout.pos.col = 1 ) )
+  
+  return(p)
+  
+}
+
+pump_out_freq_df<-function(p,gene_expression, color, shape) {
+  NR_BINS=40
+  
+  mybinwidth=ceiling((max(gene_expression)+1)/NR_BINS)
+  
+  freq <- hist(x=as.numeric(gene_expression),
+               breaks=seq(0,max(gene_expression)+mybinwidth,mybinwidth),
+               plot=FALSE)
+  
+  freq_df <- data.frame(centers = freq$mids, counts = freq$counts, my_gene_nr=as.factor(ii))
+  
+  #geom_line(data=freq_df,
+  #             stat="identity", 
+  #             mapping=aes(x=centers, y=counts),
+  #             color=color)
+  #shape
+  
+}
 
 my_title_row<-function(mytitle) {
   par(mar = c(0,0,0,0))

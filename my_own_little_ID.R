@@ -15,12 +15,15 @@ library("Rtsne")
 library(grid)
 library("gridExtra") # this throws an error which appears to be ignorable 
 library(ggplot2)
+require(scales)
 
 # Personal libraries
 source("./my_functions_clustering.R")
+source("./my_functions_standard_plots.R")
 
 # Settings
-fileName = 'JE1_TranscriptCounts.tsv'
+#fileName = 'JE1_TranscriptCounts.tsv'
+fileName = '/Users/m.wehrens/Data/Arwa/HUB-AK-003_HLWF5BGX9_S1_R2.TranscriptCounts.tsv'
 
 # Load and plot some data -------------------------------------------------------------------
 
@@ -30,17 +33,17 @@ my_test_data <- read.table(fileName, header=T, row.names=1, sep="\t")
 
 # Just plotting the values of 1 cell
 my_data_ordered=filter(my_test_data,X1>0)
-my_data_ordered=arrange(my_data_ordered,desc(X1))
+my_data_ordered=arrange(my_data_ordered,desc(X001))
 ggplot(data=my_data_ordered) +
-  geom_point(mapping=aes(x=seq(length(X1)),y=X1)) +
+  geom_point(mapping=aes(x=seq(length(X001)),y=X001)) +
   coord_trans(y="log2")
 
 # getting an idea of the values in the data
 ggplot(data=my_test_data) +
-  geom_point(mapping=aes(x=seq(length(X1)),y=X1))
+  geom_point(mapping=aes(x=seq(length(X001)),y=X001))
 
 # we can also make a pdf for one column
-ggplot(data=filter(my_test_data,X1>0), mapping=aes(x=X1)) +
+ggplot(data=filter(my_test_data,X001>0), mapping=aes(x=X001)) +
   #geom_histogram(binwidth=10, breaks=seq(0,150,10))
   geom_freqpoly(binwidth=10, breaks=seq(0,150,10))
 
@@ -226,47 +229,9 @@ grid.arrange(p1_dimred,p2_dimred,p3_dimred,p4_dimred,nrow=2)
 n <- 60
 qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
 col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
+
+# show color palette in pie chart
 pie(rep(1,n), col=sample(col_vector, n))
-
-# Now determine the clusters, first with arbitrary amount of clusters ---------------------------------------------------
-
-# First 
-myclusters = kmeans(res_df,centers=15)
-cluster_assignments = factor(myclusters$cluster)
-
-library("RColorBrewer")
-# now plot PCA again, but color coded for clusters
-ggplot(data=mypca_df)+
-  geom_point(aes(x=PC1,y=PC2, color=cluster_assignments))+
-  scale_color_manual(values=col_vector)+
-  ggtitle('Correlation matrix converted to points (PCA projection)')
-  #scale_color_brewer(palette="Dark2")
-
-# Now this hierarchy can be applied to the corr matrix to sort it
-mysorted_data=sort.int(cluster_assignments,index.return=TRUE)
-mysorted_idx = mysorted_data$ix
-
-sorted_res = res[mysorted_idx,]
-sorted_res = sorted_res[,mysorted_idx]
-
-# now plot this
-# needs melt first (creates dataframe with all X,Y pairs and their Y value
-melt_res <- melt(sorted_res)
-# plot it
-TEXTSIZE=6
-ggplot(data = melt_res, aes(x=Var1, y=Var2, fill=value)) + 
-  geom_tile() +
-  scale_fill_gradient2(limits=c(-1, 1),low='darkred',mid = "white", high = "steelblue",name=element_blank())+
-  xlab(element_blank())+ylab(element_blank())+
-  ggtitle('Correlation (not some clusters are similar)')+
-  theme(#legend.position="none",
-    text = element_text(size=TEXTSIZE),
-    axis.text = element_text(size=TEXTSIZE),
-    plot.title = element_text(size=TEXTSIZE),
-    legend.text = element_text(size=TEXTSIZE),
-    axis.text.x = element_text(angle = 90, hjust = 1))
-ggsave("./plots/data_exploration_correlationmap.pdf", width=30, height=30)
-ggsave("./plots/data_exploration_correlationmap.png", width=30, height=30)
 
 # Now it would be nice if we could determine the optimal cluster size ------------------------------------------
 
@@ -324,49 +289,120 @@ cluster_assignments_pca = factor(myclusters_pca$cluster)
 myclusters_corr = kmeans(res_df,centers=optimal_size_corr[1])
 cluster_assignments_corr = factor(myclusters_corr$cluster)
 
+# Now plot the correlation matrix with it's clustering ---------------------------------------------------
+
+# now plot PCA again, but color coded for clusters
+ggplot(data=mypca_df)+
+  geom_point(aes(x=PC1,y=PC2, color=cluster_assignments_corr))+
+  scale_color_manual(values=col_vector)+
+  ggtitle('Correlation matrix converted to points (PCA projection)')
+#scale_color_brewer(palette="Dark2")
+
+# Now this hierarchy can be applied to the corr matrix to sort it
+mysorted_data=sort.int(cluster_assignments_corr,index.return=TRUE)
+mysorted_idx = mysorted_data$ix
+
+sorted_res = res[mysorted_idx,]
+sorted_res = sorted_res[,mysorted_idx]
+
+# now plot this
+# needs melt first (creates dataframe with all X,Y pairs and their Y value
+melt_res <- melt(sorted_res)
+# plot it
+TEXTSIZE=6
+p_corr_clustered <- ggplot(data = melt_res, aes(x=Var1, y=Var2, fill=value)) + 
+  geom_tile() +
+  scale_fill_gradient2(limits=c(-1, 1),low='darkred',mid = "white", high = "steelblue",name=element_blank())+
+  xlab(element_blank())+ylab(element_blank())+
+  ggtitle(paste('Correlation (sorted by k=',toString(optimal_size_corr[1]),' clusters)'))+
+  theme(#legend.position="none",
+    text = element_text(size=TEXTSIZE),
+    axis.text = element_text(size=TEXTSIZE),
+    plot.title = element_text(size=TEXTSIZE),
+    legend.text = element_text(size=TEXTSIZE),
+    axis.text.x = element_text(angle = 90, hjust = 1))
+p_corr_clustered
+ggsave("./plots/data_exploration_correlationmap.pdf", width=30, height=30)
+ggsave("./plots/data_exploration_correlationmap.png", width=30, height=30)
+
 # Now plot some stuff -----------------------------------------------------------------------------------
 
 TEXTSIZE=15
-grid.arrange(
+p_all_clustermethods_genespace<-grid.arrange(
   #my_title_row("t-SNE projection"),
   plot_scatter_w_highlighted_clusters(
-    my_tsne_cells_df,"V1","V2",cluster_assignments_raw,"tSNE-1","tSNE-2",paste("Raw k=",toString(optimal_size_raw_chosen),""),col_vector),
+    my_tsne_cells_df,"V1","V2",cluster_assignments_raw,"tSNE-1","tSNE-2",paste("Clusters_Raw, k=",toString(optimal_size_raw_chosen),""),col_vector),
   plot_scatter_w_highlighted_clusters(
-    my_tsne_cells_df,"V1","V2",cluster_assignments_pca,"tSNE-1","tSNE-2",paste("PCA k=",toString(optimal_size_pca[1]),""),col_vector),
+    my_tsne_cells_df,"V1","V2",cluster_assignments_pca,"tSNE-1","tSNE-2",paste("Clusters_PCA, k=",toString(optimal_size_pca[1]),""),col_vector),
   plot_scatter_w_highlighted_clusters(
-    my_tsne_cells_df,"V1","V2",cluster_assignments_corr,"tSNE-1","tSNE-2",paste("Corr k=",toString(optimal_size_corr[1]),""),col_vector),
+    my_tsne_cells_df,"V1","V2",cluster_assignments_corr,"tSNE-1","tSNE-2",paste("Clusters_Corr, k=",toString(optimal_size_corr[1]),""),col_vector),
   #my_title_row("PCA projection"),
   plot_scatter_w_highlighted_clusters(
-    my_pca_cells_df,"PC1","PC2",cluster_assignments_raw,"PCA-1","PCA-2",paste("Raw k=",toString(optimal_size_raw_chosen),""),col_vector),
+    my_pca_cells_df,"PC1","PC2",cluster_assignments_raw,"PCA-1","PCA-2",paste("Clusters_Raw, k=",toString(optimal_size_raw_chosen),""),col_vector),
   plot_scatter_w_highlighted_clusters(
-    my_pca_cells_df,"PC1","PC2",cluster_assignments_pca,"PCA-1","PCA-2",paste("PCA k=",toString(optimal_size_pca[1]),""),col_vector),
+    my_pca_cells_df,"PC1","PC2",cluster_assignments_pca,"PCA-1","PCA-2",paste("Clusters_PCA, k=",toString(optimal_size_pca[1]),""),col_vector),
   plot_scatter_w_highlighted_clusters(
-    my_pca_cells_df,"PC1","PC2",cluster_assignments_corr,"PCA-1","PCA-2",paste("Corr k=",toString(optimal_size_corr[1]),""),col_vector),
+    my_pca_cells_df,"PC1","PC2",cluster_assignments_corr,"PCA-1","PCA-2",paste("Clusters_Corr, k=",toString(optimal_size_corr[1]),""),col_vector),
   top=textGrob("Plotting cells in gene expression space",gp=gpar(fontsize=TEXTSIZE,font=3)), #font=3 sets italic
   nrow=2)
   
+# Now plot some stuff -----------------------------------------------------------------------------------
 
 TEXTSIZE=15
-grid.arrange(
+p_all_clustermethods_corrspace <- grid.arrange(
   #my_title_row("t-SNE projection"),
   plot_scatter_w_highlighted_clusters(
-    my_tsne_corr_df,"V1","V2",cluster_assignments_raw,"tSNE-1","tSNE-2",paste("Raw k=",toString(optimal_size_raw_chosen),""),col_vector),
+    my_tsne_corr_df,"V1","V2",cluster_assignments_raw,"tSNE-1","tSNE-2",paste("Clusters_Raw; k=",toString(optimal_size_raw_chosen),""),col_vector),
   plot_scatter_w_highlighted_clusters(
-    my_tsne_corr_df,"V1","V2",cluster_assignments_pca,"tSNE-1","tSNE-2",paste("PCA k=",toString(optimal_size_pca[1]),""),col_vector),
+    my_tsne_corr_df,"V1","V2",cluster_assignments_pca,"tSNE-1","tSNE-2",paste("Clusters_PCA; k=",toString(optimal_size_pca[1]),""),col_vector),
   plot_scatter_w_highlighted_clusters(
-    my_tsne_corr_df,"V1","V2",cluster_assignments_corr,"tSNE-1","tSNE-2",paste("Corr k=",toString(optimal_size_corr[1]),""),col_vector),
+    my_tsne_corr_df,"V1","V2",cluster_assignments_corr,"tSNE-1","tSNE-2",paste("Clusters_Corr; k=",toString(optimal_size_corr[1]),""),col_vector),
   #my_title_row("PCA projection"),
   plot_scatter_w_highlighted_clusters(
-    my_pca_corr_df,"PC1","PC2",cluster_assignments_raw,"PCA-1","PCA-2",paste("Raw k=",toString(optimal_size_raw_chosen),""),col_vector),
+    my_pca_corr_df,"PC1","PC2",cluster_assignments_raw,"PCA-1","PCA-2",paste("Clusters_Raw; k=",toString(optimal_size_raw_chosen),""),col_vector),
   plot_scatter_w_highlighted_clusters(
-    my_pca_corr_df,"PC1","PC2",cluster_assignments_pca,"PCA-1","PCA-2",paste("PCA k=",toString(optimal_size_pca[1]),""),col_vector),
+    my_pca_corr_df,"PC1","PC2",cluster_assignments_pca,"PCA-1","PCA-2",paste("Clusters_PCA; k=",toString(optimal_size_pca[1]),""),col_vector),
   plot_scatter_w_highlighted_clusters(
-    my_pca_corr_df,"PC1","PC2",cluster_assignments_corr,"PCA-1","PCA-2",paste("Corr k=",toString(optimal_size_corr[1]),""),col_vector),
+    my_pca_corr_df,"PC1","PC2",cluster_assignments_corr,"PCA-1","PCA-2",paste("Clusters_Corr; k=",toString(optimal_size_corr[1]),""),col_vector),
   top=textGrob("Plotting cells in cell-cell correlation space",gp=gpar(fontsize=TEXTSIZE,font=3)), #font=3 sets italic
   nrow=2)
 
+# Analysis of specific genes ============================================================================
+
+library(stringr) 
+# TODO use regexp, e.g. str_detect(bananas, "banana")
+
+#my_gene_of_interest="TCF21__chr6"
+#my_gene_of_interest="WT1__chr11"
+#my_gene_of_interest="WT1__chr1"
+#my_gene_of_interest="TBX18__chr6"
+#my_gene_of_interest="LEPROTL1__chr8"
 
 
+
+gene_index = which(rownames(my_test_data)==my_gene_of_interest)
+gene_counts = as.numeric(my_test_data[gene_index,])
+sum_gene_counts = sum(gene_counts)
+mybinwidth=ceiling((max(gene_counts)+1)/20)
+freq<-hist(x=gene_counts,
+           breaks=seq(-0.5,max(gene_counts)+mybinwidth,mybinwidth),
+           plot=FALSE)
+# plot
+freq_frame<-data.frame(centers = freq$mids, counts = freq$counts)
+ggplot(data=freq_frame, mapping=aes(x=centers, y=counts)) +
+  geom_bar(stat="identity")+
+  #geom_line()+
+  #geom_point()+
+  xlab("Transcript count")+
+  ylab("Number of times observed")+
+  ggtitle(paste("Distribution of transcript counts of ", my_gene_of_interest)) +
+  theme(text = element_text(size=TEXTSIZE),
+        axis.text = element_text(size=TEXTSIZE),
+        plot.title = element_text(size=TEXTSIZE))+
+  scale_x_continuous(labels = comma)+
+  scale_y_continuous(labels = comma)
+#ggsave("./plots/data_exploration_low_count.pdf", width=6, height=4)
+#ggsave("./plots/data_exploration_low_count.png", width=6, height=4)
 
 
 

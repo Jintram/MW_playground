@@ -2,3 +2,5 @@ plots/
 .Rhistory
 *.history
 .RData
+*.pdf
+*.png
