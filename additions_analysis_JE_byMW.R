@@ -132,11 +132,11 @@ ggsave(paste(directory_with_data,"plots_MW/tsne_highlights_cond_clust.png",sep="
 # ==================================================================================================
 
 celltype_for_these_markers <- 'Epicardial'
-list_of_interesting_genes <- c('WT1','TBX18','ADLH1A2','ZO1','BNC1','ANXA8','K18','KRT8','KRT19','GPM6A','UP1KB','CDH1','UPK3B')
+list_of_interesting_genes <- c('^WT1_','TBX18','ADLH1A2','ZO1','BNC1','ANXA8','K18','KRT8','KRT19','GPM6A','UP1KB','CDH1','UPK3B')
 
 celltype_for_these_markers <- 'Fat'
-#list_of_interesting_genes <- c('PPARG','PPARGC1A','UCP1','EDNRB','CEBPA','CEBPB','EBF3','RORA','FABP4','PLIN','PDGFRA','ADIPOQ','LEP','DLK1','APOE','LIPE','GLUT4','KLF5')	
-list_of_interesting_genes <- c('PPARG_','PPARgamma','NR1C3', 'PPARG1', 'PPARG2')
+list_of_interesting_genes <- c('PPARG_','PPARGC1A','UCP1','EDNRB','CEBPA','CEBPB','EBF3','RORA','FABP4','PLIN','PDGFRA','ADIPOQ','LEP','DLK1','APOE','LIPE','GLUT4','KLF5')	
+#list_of_interesting_genes <- c('PPARG_','PPARgamma','NR1C3', 'PPARG1', 'PPARG2')
 
 celltype_for_these_markers <- 'Fibroblast'
 list_of_interesting_genes <- c('FN1','POSTN','VIM','ACTA2','COL1A1','COL1A2','COL2A1','COL9A1','CDH2','FSTL1','COL3A1','GSN','FBLN2','SPARC','MMP','DDR2','FSP1','PDGFRA','THY1','FLNA','KLF5')
@@ -156,7 +156,7 @@ for (ii in seq(1,length(list_of_interesting_genes))) {
   current_gene_interest<-list_of_interesting_genes[ii]
   
   # Go over interesting genes and gather their expression
-  all_gene_expression <- groupedSCS$Combined@fdata
+  all_gene_expression <- groupedSCS$Combined@ndata
   gene_names <- rownames(all_gene_expression)
   gene_idxs<-which(grepl(current_gene_interest,gene_names))
   
@@ -184,6 +184,7 @@ for (ii in seq(1,length(list_of_interesting_genes))) {
 TEXTSIZE=15
 p_overview_hist<-ggplot()+
   geom_line(data=freq_df,stat="identity", mapping=aes(x=centers, y=counts,color=my_gene_nr))+
+  geom_point(data=freq_df, mapping=aes(x=centers, y=counts,color=my_gene_nr))+
   scale_color_manual(values=col_vector,labels=found_genes)+
   ggtitle(paste('Gene expression for ',celltype_for_these_markers,' markers'))+
   theme(#legend.position="none",
@@ -208,10 +209,13 @@ GENE_OF_INTEREST<-1480 # COL1A1__chr17 (fibro)
 GENE_OF_INTEREST<-7216 # TFAP2A__chr6
 GENE_OF_INTEREST<-1994 # DSG2__chr18
 GENE_OF_INTEREST<-8059 # WT1__chr11  FOUND; index=  8059 ."
+GENE_OF_INTEREST<-12815 # "PPARG__chr3  FOUND; index=  12815 ."
+GENE_OF_INTEREST<-18261# "WT1__chr11  FOUND; index=  18261 ."
 
 name_of_this_gene<-gene_names[GENE_OF_INTEREST]
 
-all_gene_expression <- groupedSCS$Combined@fdata
+all_gene_expression <- groupedSCS$Combined@ndata # normalized data
+#all_gene_expression <- groupedSCS$Combined@expdata
 selected_gene_expression<-all_gene_expression[GENE_OF_INTEREST,]
 
 # Add the expression to the dataframe in another column
@@ -273,34 +277,62 @@ cond2_idxs <- which(df_tsne$condition==2)
 all_gene_expression <- groupedSCS$Combined@fdata # note this was also done earlier
 cond1_cells_gene_expression<-all_gene_expression[,cond1_idxs]
 cond2_cells_gene_expression<-all_gene_expression[,cond2_idxs]
-# Calculate average gene expression
+# Calculate average and differential gene expression
 cond1_average_gene_expression<-rowMeans(cond1_cells_gene_expression,dim=1)
 cond2_average_gene_expression<-rowMeans(cond2_cells_gene_expression,dim=1)
-# Calculate differential gene expression
-differential_expression<-cond1_average_gene_expression/cond2_average_gene_expression
-sorted_differential_expression_df<-as.data.frame(sort(differential_expression))
-colnames(sorted_differential_expression_df)<-'Differential_expression'
+differential_expression<-cond2_average_gene_expression/cond1_average_gene_expression
+# Get names for all genes
+all_gene_names<-rownames(cond2_cells_gene_expression)
+all_gene_names_short<-str_replace_all(all_gene_names,'_.*','')
+# set up dataframe with that info
+differential_conditions_df <- data_frame(all_gene_names=all_gene_names, 
+                                         cond1_average_gene_expression=cond1_average_gene_expression,
+                                         cond2_average_gene_expression=cond2_average_gene_expression,
+                                         differential_expression=differential_expression,
+                                         differential_expression_inv=1/differential_expression,
+                                         original_nr=factor(1:length(all_gene_names)))
+# Now sort
+differential_conditions_df<-differential_conditions_df[order(-differential_conditions_df$differential_expression),]
+#differential_conditions_df$n123<-factor(differential_conditions_df$n123, levels=differential_conditions_df$n123)
 
-# Make a bar plot of the top and bottom differentially expressed genes
-ggplot(data=sorted_differential_expression_df, mapping=aes( y=Differential_expression))+
-  geom_bar(stat='identity')
+# Select the highest values ------------------------------------------------------------------------------
+selected_data_df<-differential_conditions_df[1:10,]
+n123=factor(1:nrow(selected_data_df), levels=1:10)
+n123ro=factor(1:nrow(selected_data_df), levels=10:1)
+selected_data_df<-mutate(selected_data_df,
+       n123=n123,
+       n123ro=n123ro)
 
-TEXTSIZE=15
-ggplot(data=sorted_differential_expression_df[1:10,], mapping=aes(x=1:length(Differential_expression), y=Differential_expression))+#,fill=dataset_id)) +
-  geom_bar(stat="identity")+
-  #geom_line()+
-  #geom_point()+
-  xlab("Transcript count")+
-  ylab("Number of times observed")+
-  ggtitle(paste("Distribution of transcript counts of ", gene_oi_realname,'\nZero count = ',toString(zero_count))) +
-  theme(text = element_text(size=TEXTSIZE),
-        axis.text = element_text(size=TEXTSIZE),
-        plot.title = element_text(size=TEXTSIZE))+
-  scale_x_continuous(labels = comma)+
-  scale_y_continuous(labels = comma)
+# Now make a bar plot
+barplot_differential_expression(selected_data_df=selected_data_df,centers_varname='n123ro',
+                                differential_expression_varname='differential_expression',
+                                all_gene_names=all_gene_names_short,
+                                lowcol='red',highcol='firebrick4',ylabtext='Times higher in mutant')
+# Save 'm
+ggsave(paste(directory_with_data,'plots_MW/differential_expression_higher_conditions.pdf',sep=""), width=10, height=6)
+ggsave(paste(directory_with_data,'plots_MW/differential_expression_higher_conditions.png',sep=""), width=10, height=6)
+
+# Select the lowest values ------------------------------------------------------------------------------
+selected_data_df_low<-differential_conditions_df[nrow(differential_conditions_df):(nrow(differential_conditions_df)-9),]
+n123=factor(1:nrow(selected_data_df_low), levels=1:nrow(selected_data_df_low))
+n123ro=factor(1:nrow(selected_data_df_low), levels=nrow(selected_data_df_low):1)
+selected_data_df_low<-mutate(selected_data_df_low,
+       n123=n123,
+       n123ro=n123ro)
+
+# Now make a bar plot
+barplot_differential_expression(selected_data_df=selected_data_df_low,centers_varname='n123ro',
+                                differential_expression_varname='differential_expression_inv',
+                                all_gene_names=all_gene_names_short,
+                                lowcol='skyblue',highcol='midnightblue',ylabtext='Times higher in mutant')
+
+# Save 'm
+ggsave(paste(directory_with_data,'plots_MW/differential_expression_lower_conditions.pdf',sep=""), width=10, height=6)
+ggsave(paste(directory_with_data,'plots_MW/differential_expression_lower_conditions.png',sep=""), width=10, height=6)
 
 # Then for the clusters ----------------------------------------------------------------------
 
+# 
 
 
 

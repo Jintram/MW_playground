@@ -167,5 +167,27 @@ my_title_col<-function(mytitle) {
   return(p)
 }
 
-
-
+barplot_differential_expression<-function(selected_data_df,
+                                          centers_varname,
+                                          differential_expression_varname,
+                                          all_gene_names,
+                                          lowcol,highcol,
+                                          ylabtext) {
+  TEXTSIZE=15
+  
+  mybreaks<-selected_data_df[[centers_varname]]
+  
+  ggplot(data=selected_data_df, mapping=aes_string(x=centers_varname, y=differential_expression_varname))+#,fill=dataset_id)) +
+    geom_bar(stat="identity", mapping=aes_string(fill=differential_expression_varname))+
+    scale_x_discrete(breaks=mybreaks,
+                     labels=all_gene_names[selected_data_df$original_nr])+
+    coord_flip()+
+    xlab("Genes")+
+    ylab(ylabtext)+
+    scale_fill_gradient(low=lowcol, high=highcol)+
+    ggtitle('Differential gene expression conditions')+
+    theme(legend.position="none",
+          text = element_text(size=TEXTSIZE),
+          axis.text = element_text(size=TEXTSIZE),
+          plot.title = element_text(size=TEXTSIZE))
+}

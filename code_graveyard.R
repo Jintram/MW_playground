@@ -147,3 +147,42 @@ p2<-ggplot(data=mypca_df)+
   #coord_trans(y="log2", x="log2")
   ggtitle('PCA cells \nK-means clustering of corr')
 grid.arrange(p1,p2,nrow=1)
+
+
+
+
+
+
+*******
+  
+  
+  
+  
+  
+  
+  TEXTSIZE=15
+ggplot(data=selected_data_df_low, mapping=aes(x=n123, y=differential_expression_inv))+#,fill=dataset_id)) +
+  geom_bar(stat="identity", mapping=aes(fill=differential_expression_inv))+
+  scale_x_discrete(breaks=n123)#+
+  coord_flip()+
+#,
+                   labels=all_gene_names_short[selected_data_df_low$original_nr])+
+  xlab("Genes")+
+  ylab("Times lower in mutant")+
+  scale_fill_gradient(low='skyblue', high="midnightblue")+
+  ggtitle('Differential gene expression conditions')+
+  theme(legend.position="none",
+        text = element_text(size=TEXTSIZE),
+        axis.text = element_text(size=TEXTSIZE),
+        plot.title = element_text(size=TEXTSIZE))
+#scale_x_continuous(labels = comma)+
+#scale_y_continuous(labels = comma)  
+
+
+
+
+
+
+
+
+

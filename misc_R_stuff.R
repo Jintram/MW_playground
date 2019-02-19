@@ -62,6 +62,15 @@ ggplot(data=delay) +
 
 
 
+# plotting a bar graph with an inverted sorted axis
+# Key is that x axis will be sorted, so you have to give your own
+# sorting, using levels of the factor type.
+testdata=data_frame(c=factor(c(1,2,3),levels=c(3,2,1)),y=c(10,4,2))
+ggplot(data=testdata, mapping=aes(x=c, y=y))+
+  geom_bar(stat="identity")
+
+
+
 
 
 
