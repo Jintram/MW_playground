@@ -51,6 +51,7 @@ plot_scatter_w_highlighted_clusters_condition_exprgrad<-function(df_toplot,x,y,c
   p1<-ggplot(data=df_toplot)+
     geom_point(aes_string(x=x,y=y,size=selected_gene_expression_varname,color=selected_gene_expression_varname))+
     scale_color_gradient(low="white", high="black")+
+    scale_size_continuous(range = c(1, 10))+
     theme(
       panel.background = element_rect(fill = "transparent") # bg of the panel
       , plot.background = element_rect(fill = "transparent", color = NA) # bg of the plot
@@ -172,7 +173,7 @@ barplot_differential_expression<-function(selected_data_df,
                                           differential_expression_varname,
                                           all_gene_names,
                                           lowcol,highcol,
-                                          ylabtext) {
+                                          ylabtext, mytitle) {
   TEXTSIZE=15
   
   mybreaks<-selected_data_df[[centers_varname]]
@@ -185,7 +186,7 @@ barplot_differential_expression<-function(selected_data_df,
     xlab("Genes")+
     ylab(ylabtext)+
     scale_fill_gradient(low=lowcol, high=highcol)+
-    ggtitle('Differential gene expression conditions')+
+    ggtitle(mytitle)+
     theme(legend.position="none",
           text = element_text(size=TEXTSIZE),
           axis.text = element_text(size=TEXTSIZE),
