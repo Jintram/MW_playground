@@ -2,6 +2,11 @@
 require('scales')
 require("RColorBrewer")
 
+conversion_searchterms <- c('HUB-AK-003', 'HUB-AK-004', 'HUB-AK-005' , 'HUB-AK-006')
+conversion_numbers     <- factor(c(1,1,2,2), levels= seq(0,NR_CONDITIONS))
+datasetnames <- c('IPS_pkp2_reverted', 'IPS_pkp2_mutant')
+shortdatasetnames <- c('reverted', 'mutant')
+
 # Create wide array of colors
 n <- 60
 qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
@@ -10,9 +15,6 @@ col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_co
 # Gene expression compared between conditions ==========================================
 
 gene_of_interest <- 'LEPROTL1'
-
-datasetnames <- c('IPS_pkp2_reverted', 'IPS_pkp2_mutant')
-shortdatasetnames <- c('reverted', 'mutant')
   
 # editing here to combine the two dataset distributions in one plot!
 gene_counts=list()
@@ -93,8 +95,6 @@ ggplot(gene_counts_df, aes(factor(dataset_id), counts)) +
 NR_CONDITIONS=2
 CONDITION_MARKERS <- c(0,8)
 
-conversion_searchterms <- c('HUB-AK-003', 'HUB-AK-004', 'HUB-AK-005' , 'HUB-AK-006')
-conversion_numbers     <- factor(c(1,1,2,2), levels= seq(0,NR_CONDITIONS))
 names_to_convert_factors = rownames(groupedSCS$Combined@tsne)
 condition_factors <- factor(rep(0,length(names_to_convert_factors)), 
        levels= seq(0,NR_CONDITIONS))
@@ -135,7 +135,8 @@ celltype_for_these_markers <- 'Epicardial'
 list_of_interesting_genes <- c('WT1','TBX18','ADLH1A2','ZO1','BNC1','ANXA8','K18','KRT8','KRT19','GPM6A','UP1KB','CDH1','UPK3B')
 
 celltype_for_these_markers <- 'Fat'
-list_of_interesting_genes <- c('PPARG','PPARGC1A','UCP1','EDNRB','CEBPA','CEBPB','EBF3','RORA','FABP4','PLIN','PDGFRA','ADIPOQ','LEP','DLK1','APOE','LIPE','GLUT4','KLF5')	
+#list_of_interesting_genes <- c('PPARG','PPARGC1A','UCP1','EDNRB','CEBPA','CEBPB','EBF3','RORA','FABP4','PLIN','PDGFRA','ADIPOQ','LEP','DLK1','APOE','LIPE','GLUT4','KLF5')	
+list_of_interesting_genes <- c('PPARG_','PPARgamma','NR1C3', 'PPARG1', 'PPARG2')
 
 celltype_for_these_markers <- 'Fibroblast'
 list_of_interesting_genes <- c('FN1','POSTN','VIM','ACTA2','COL1A1','COL1A2','COL2A1','COL9A1','CDH2','FSTL1','COL3A1','GSN','FBLN2','SPARC','MMP','DDR2','FSP1','PDGFRA','THY1','FLNA','KLF5')
@@ -145,6 +146,8 @@ list_of_interesting_genes <- c('TFAP2A','TFAP2B','TFAP2C','TFAP2D','TFAP2E')
 
 celltype_for_these_markers <- 'Desmosome'
 list_of_interesting_genes <- c('PKP2','DSP','DSC2','DSG2','JUP','GJA1')
+
+# ==================================================================================================
 
 freq_df<-data.frame(centers = numeric(), counts = numeric(), my_gene_nr=factor(levels=seq(1,length(list_of_interesting_genes))))
 found_genes<-list()
@@ -187,7 +190,9 @@ p_overview_hist<-ggplot()+
     text = element_text(size=TEXTSIZE),
     axis.text = element_text(size=TEXTSIZE),
     plot.title = element_text(size=TEXTSIZE),
-    legend.text = element_text(size=TEXTSIZE))
+    legend.text = element_text(size=TEXTSIZE))+
+  xlab('Transcript count (normalized)')+
+  ylab('Counts')
 p_overview_hist
 # Save
 ggsave(paste(directory_with_data,'plots_MW/histogram_gene_expression2_',celltype_for_these_markers,'.pdf',sep=""), width=10, height=6)
@@ -202,6 +207,7 @@ GENE_OF_INTEREST<-5063 # PDGFRA__chr4 (fibro)
 GENE_OF_INTEREST<-1480 # COL1A1__chr17 (fibro)
 GENE_OF_INTEREST<-7216 # TFAP2A__chr6
 GENE_OF_INTEREST<-1994 # DSG2__chr18
+GENE_OF_INTEREST<-8059 # WT1__chr11  FOUND; index=  8059 ."
 
 name_of_this_gene<-gene_names[GENE_OF_INTEREST]
 
@@ -251,6 +257,50 @@ plot_scatter_gene_expression(
 )
 ggsave(paste(directory_with_data,'plots_MW/tsne_gene_expression_',celltype_for_these_markers,'_',GENE_OF_INTEREST,'.pdf',sep=""), width=10, height=6)
 ggsave(paste(directory_with_data,'plots_MW/tsne_gene_expression_',celltype_for_these_markers,'_',GENE_OF_INTEREST,'.png',sep=""), width=10, height=6)
+
+
+# Now calculate the differential gene expression =============================================
+
+# First for the two conditions ---------------------------------------------------------------
+
+# calculate average gene expressions for conditions
+
+# this could be done more automatized, but for now let's just do it quick'n'dirty
+# Get indices of conditions
+cond1_idxs <- which(df_tsne$condition==1)
+cond2_idxs <- which(df_tsne$condition==2)
+# Pull columns with those indices from the experimental data matrix
+all_gene_expression <- groupedSCS$Combined@fdata # note this was also done earlier
+cond1_cells_gene_expression<-all_gene_expression[,cond1_idxs]
+cond2_cells_gene_expression<-all_gene_expression[,cond2_idxs]
+# Calculate average gene expression
+cond1_average_gene_expression<-rowMeans(cond1_cells_gene_expression,dim=1)
+cond2_average_gene_expression<-rowMeans(cond2_cells_gene_expression,dim=1)
+# Calculate differential gene expression
+differential_expression<-cond1_average_gene_expression/cond2_average_gene_expression
+sorted_differential_expression_df<-as.data.frame(sort(differential_expression))
+colnames(sorted_differential_expression_df)<-'Differential_expression'
+
+# Make a bar plot of the top and bottom differentially expressed genes
+ggplot(data=sorted_differential_expression_df, mapping=aes( y=Differential_expression))+
+  geom_bar(stat='identity')
+
+TEXTSIZE=15
+ggplot(data=sorted_differential_expression_df[1:10,], mapping=aes(x=1:length(Differential_expression), y=Differential_expression))+#,fill=dataset_id)) +
+  geom_bar(stat="identity")+
+  #geom_line()+
+  #geom_point()+
+  xlab("Transcript count")+
+  ylab("Number of times observed")+
+  ggtitle(paste("Distribution of transcript counts of ", gene_oi_realname,'\nZero count = ',toString(zero_count))) +
+  theme(text = element_text(size=TEXTSIZE),
+        axis.text = element_text(size=TEXTSIZE),
+        plot.title = element_text(size=TEXTSIZE))+
+  scale_x_continuous(labels = comma)+
+  scale_y_continuous(labels = comma)
+
+# Then for the clusters ----------------------------------------------------------------------
+
 
 
 
