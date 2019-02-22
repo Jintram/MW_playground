@@ -125,6 +125,17 @@ p_tsne_cond_clust<-plot_scatter_w_highlighted_clusters_condition(df_tsne,'V1','V
 ggsave(paste(directory_with_data,"plots_MW/tsne_highlights_cond_clust.pdf",sep=""), width=10, height=6)
 ggsave(paste(directory_with_data,"plots_MW/tsne_highlights_cond_clust.png",sep=""), width=10, height=6)
 
+# ==================================================================================================
+# Create heat map ==================================================================================
+# ==================================================================================================
+
+cclmo<-clustheatmap(groupedSCS$Combined,final=T)
+# TODO: still have to find a way to save and edit this plot automatically.. (Maybe check Joep's code?)
+
+#ggtitle('Cellular correlations; 1 minus pearson coefficient')
+#ggsave(paste(directory_with_data,"plots_MW/tsne_highlights_cond_clust.pdf",sep=""), width=10, height=6)
+#ggsave(paste(directory_with_data,"plots_MW/tsne_highlights_cond_clust.png",sep=""), width=10, height=6)
+
 
 # ==================================================================================================
 # Making a plot with gradient according to gene expression =========================================
@@ -148,134 +159,177 @@ list_of_interesting_genes <- c('^PKP2_','^DSP_','^DSC2_','^DSG2_','^JUP_','^GJA1
 
 # ==================================================================================================
 
-freq_df<-data.frame(centers = numeric(), counts = numeric(), my_gene_nr=factor(levels=seq(1,length(list_of_interesting_genes))))
-found_genes<-list()
-list_of_genes_of_interest<-numeric()
-for (ii in seq(1,length(list_of_interesting_genes))) {
+# List of lists for Iliana markers
+
+marker_list_of_lists <- list(list('^NGF_','^GDNF_','^NTF3_','^LIF_','^FGF1_','^EGF_','^FGF2_','^LAMA2_','^MANF_','^FKBP1B_','^NRG1_','^FKBP3_'),
+                        list('^UCP1_','^CPT1B_','^PRDM16_','^PPARGC1A_','^COX4I1_'),
+                        list('^ZIC1_','^LHX8_','^MTUS1_'),
+                        list('^TBX1_','^SLC36A2_','^TMEM26_','^P2RX5_','^TNFRSF9_','^KCNK3_'),
+                        list('^HOXC9_','^SLC7A10_','^SHOX2_'),
+                        list('^CYBA_','^HIF1A_','^TGFB1_','^NCF1_'),
+                        list('^SLC2A4_','^CEBPA_','^ADIPOQ_','^FABP4_','^PPARG_'),
+                        list('^ADRB1_','^ADRB2_','^ADRB3_','^ADRA2A_'),
+                        list('^ELOVL3_','^ACADM_','^ACOX1_','^ACADVL_'),
+                        list('^HSPD1_','^HSPE1_','^HSPA9_','^TRAP1_'),
+                        list('^TFAM_','^CYC1_'),
+                        list('^MFN2_'))
+
+# and their names
+marker_names_list <- list('Neurotrophic',
+                          'Thermogenic',
+                          'Brown fat',
+                          'Beige fat',
+                          'White fat',
+                          'Oxidative_stress',
+                          'Adipose_tissue_g_f',
+                          'Adrenergic_R',
+                          'Lipid_synth_ox',
+                          'mt-stress response',
+                          'mt_biogenesis',
+                          'mt_fusion')
+
+# ==================================================================================================
+
+SUBPLOTDIR='markers_Iliana/'
+
+for (marker_idx in 1:length(marker_names_list)) {
   
-  current_gene_interest<-list_of_interesting_genes[ii]
+  # now run over the marker list 
+  # Note: names of 2 params below should be given more clear names
+  list_of_interesting_genes<-marker_list_of_lists[[marker_idx]]
+  celltype_for_these_markers<-marker_names_list[marker_idx]
   
-  # Go over interesting genes and gather their expression
-  all_gene_expression <- groupedSCS$Combined@ndata
-  gene_names <- rownames(all_gene_expression)
-  gene_idxs<-which(grepl(current_gene_interest,gene_names))
+  freq_df<-data.frame(centers = numeric(), counts = numeric(), my_gene_nr=factor(levels=seq(1,length(list_of_interesting_genes))))
+  found_genes<-list()
+  list_of_genes_of_interest<-numeric()
+  for (ii in seq(1,length(list_of_interesting_genes))) {
+    
+    current_gene_interest<-list_of_interesting_genes[ii]
+    
+    # Go over interesting genes and gather their expression
+    all_gene_expression <- groupedSCS$Combined@ndata
+    gene_names <- rownames(all_gene_expression)
+    gene_idxs<-which(grepl(current_gene_interest,gene_names))
+    
+    if (length(gene_idxs)==0){
+      print(paste(current_gene_interest, ": None found -- skipping")) 
+      next
+    } else if (length(gene_idxs)>1) {
+      print(paste(current_gene_interest, ": Multiple found -- skipping")) 
+      next
+    } else {
+      print(paste(gene_names[gene_idxs], ' FOUND; index= ', gene_idxs, '.'),sep="")
+    }
+    
+    found_genes[length(found_genes)+1] <- gene_names[gene_idxs] # note there should only be one!
+    
+    selected_gene_expression <- all_gene_expression[gene_idxs,]
+    selected_gene_expression_resized<-selected_gene_expression/max(selected_gene_expression)*2
+    
+    current_df <- pump_out_freq_df(p,selected_gene_expression, 'blue', 0)
+    freq_df <- rbind(freq_df,current_df)
   
-  if (length(gene_idxs)==0){
-    print(paste(current_gene_interest, ": None found -- skipping")) 
-    next
-  } else if (length(gene_idxs)>1) {
-    print(paste(current_gene_interest, ": Multiple found -- skipping")) 
-    next
-  } else {
-    print(paste(gene_names[gene_idxs], ' FOUND; index= ', gene_idxs, '.'),sep="")
+    list_of_genes_of_interest[length(list_of_genes_of_interest)+1]<-gene_idxs[1]
+    
   }
   
-  found_genes[length(found_genes)+1] <- gene_names[gene_idxs] # note there should only be one!
-  
-  selected_gene_expression <- all_gene_expression[gene_idxs,]
-  selected_gene_expression_resized<-selected_gene_expression/max(selected_gene_expression)*2
-  
-  current_df <- pump_out_freq_df(p,selected_gene_expression, 'blue', 0)
-  freq_df <- rbind(freq_df,current_df)
+  # Create a combined histogram plot
+  TEXTSIZE=15
+  p_overview_hist<-ggplot()+
+    geom_line(data=freq_df,stat="identity", mapping=aes(x=centers, y=counts,color=my_gene_nr))+
+    geom_point(data=freq_df, mapping=aes(x=centers, y=counts,color=my_gene_nr))+
+    scale_color_manual(values=col_vector,labels=found_genes)+
+    ggtitle(paste('Gene expression for ',celltype_for_these_markers,' markers'))+
+    theme(#legend.position="none",
+      text = element_text(size=TEXTSIZE),
+      axis.text = element_text(size=TEXTSIZE),
+      plot.title = element_text(size=TEXTSIZE),
+      legend.text = element_text(size=TEXTSIZE))+
+    xlab('Transcript count (normalized)')+
+    ylab('Counts')
+  print(p_overview_hist)
+  # Save
+  ggsave(paste(directory_with_data,'plots_MW/',SUBPLOTDIR,'histogram_gene_expression2_',celltype_for_these_markers,'.pdf',sep=""), width=10, height=6)
+  ggsave(paste(directory_with_data,'plots_MW/',SUBPLOTDIR,'histogram_gene_expression2_',celltype_for_these_markers,'.png',sep=""), width=10, height=6)
 
-  list_of_genes_of_interest[length(list_of_genes_of_interest)+1]<-gene_idxs[1]
+  # OK now go ahead
   
-}
-
-# Create a combined histogram plot
-TEXTSIZE=15
-p_overview_hist<-ggplot()+
-  geom_line(data=freq_df,stat="identity", mapping=aes(x=centers, y=counts,color=my_gene_nr))+
-  geom_point(data=freq_df, mapping=aes(x=centers, y=counts,color=my_gene_nr))+
-  scale_color_manual(values=col_vector,labels=found_genes)+
-  ggtitle(paste('Gene expression for ',celltype_for_these_markers,' markers'))+
-  theme(#legend.position="none",
-    text = element_text(size=TEXTSIZE),
-    axis.text = element_text(size=TEXTSIZE),
-    plot.title = element_text(size=TEXTSIZE),
-    legend.text = element_text(size=TEXTSIZE))+
-  xlab('Transcript count (normalized)')+
-  ylab('Counts')
-p_overview_hist
-# Save
-ggsave(paste(directory_with_data,'plots_MW/markers/histogram_gene_expression2_',celltype_for_these_markers,'.pdf',sep=""), width=10, height=6)
-ggsave(paste(directory_with_data,'plots_MW/markers/histogram_gene_expression2_',celltype_for_these_markers,'.png',sep=""), width=10, height=6)
-
-# OK now go ahead -----------------
-
-# Not needed any more
-#GENE_OF_INTEREST<-3625 # KRT19__chr17 (epi)
-#GENE_OF_INTEREST<-371 # APOE__chr19 (fat)
-#GENE_OF_INTEREST<-5063 # PDGFRA__chr4 (fibro)
-#GENE_OF_INTEREST<-1480 # COL1A1__chr17 (fibro)
-#GENE_OF_INTEREST<-7216 # TFAP2A__chr6
-#GENE_OF_INTEREST<-1994 # DSG2__chr18
-#GENE_OF_INTEREST<-8059 # WT1__chr11  FOUND; index=  8059 ."
-#GENE_OF_INTEREST<-12815 # "PPARG__chr3  FOUND; index=  12815 ."
-#GENE_OF_INTEREST<-18261# "WT1__chr11  FOUND; index=  18261 ."
-
-# Run over genes automatically
-for (GENE_OF_INTEREST in list_of_genes_of_interest) {
+  # Not needed any more
+  #GENE_OF_INTEREST<-3625 # KRT19__chr17 (epi)
+  #GENE_OF_INTEREST<-371 # APOE__chr19 (fat)
+  #GENE_OF_INTEREST<-5063 # PDGFRA__chr4 (fibro)
+  #GENE_OF_INTEREST<-1480 # COL1A1__chr17 (fibro)
+  #GENE_OF_INTEREST<-7216 # TFAP2A__chr6
+  #GENE_OF_INTEREST<-1994 # DSG2__chr18
+  #GENE_OF_INTEREST<-8059 # WT1__chr11  FOUND; index=  8059 ."
+  #GENE_OF_INTEREST<-12815 # "PPARG__chr3  FOUND; index=  12815 ."
+  #GENE_OF_INTEREST<-18261# "WT1__chr11  FOUND; index=  18261 ."
   
-  name_of_this_gene<-gene_names[GENE_OF_INTEREST]
-  
-  all_gene_expression <- groupedSCS$Combined@ndata # normalized data
-  #all_gene_expression <- groupedSCS$Combined@expdata
-  selected_gene_expression<-all_gene_expression[GENE_OF_INTEREST,]
-  
-  # Add the expression to the dataframe in another column
-  df_tsne <- data_frame(V1=groupedSCS$Combined@tsne$V1,
-                        V2=groupedSCS$Combined@tsne$V2,
-                        cluster_assignments=cluster_assignments,
-                        condition=condition_factors,
-                        selected_gene_expression=as.numeric(selected_gene_expression))
-  #or use mutate(df_tsne,)? I think that's not convenient when we update the parameter
-  
-  # Make the scatter plots
-  savelocation<-paste(directory_with_data,'plots_MW/gradientplots/tsne_combined_cluster_genexpr_',celltype_for_these_markers,'_',name_of_this_gene,'.pdf',sep="")
-  ppplist<-
-    plot_scatter_w_highlighted_clusters_condition_exprgrad(
+  # Run over genes automatically
+  for (GENE_OF_INTEREST in list_of_genes_of_interest) {
+    
+    name_of_this_gene<-gene_names[GENE_OF_INTEREST]
+    
+    all_gene_expression <- groupedSCS$Combined@ndata # normalized data
+    #all_gene_expression <- groupedSCS$Combined@expdata
+    selected_gene_expression<-all_gene_expression[GENE_OF_INTEREST,]
+    
+    # Add the expression to the dataframe in another column
+    df_tsne <- data_frame(V1=groupedSCS$Combined@tsne$V1,
+                          V2=groupedSCS$Combined@tsne$V2,
+                          cluster_assignments=cluster_assignments,
+                          condition=condition_factors,
+                          selected_gene_expression=as.numeric(selected_gene_expression))
+    #or use mutate(df_tsne,)? I think that's not convenient when we update the parameter
+    
+    # Make the scatter plots
+    savelocation<-paste(directory_with_data,'plots_MW/',SUBPLOTDIR,'tsne_combined_cluster_genexpr_',celltype_for_these_markers,'_',name_of_this_gene,'.pdf',sep="")
+    ppplist<-
+      plot_scatter_w_highlighted_clusters_condition_exprgrad(
+        df_tsne,'V1','V2','cluster_assignments','condition_factors',
+        condition_names=shortdatasetnames,condition_markers=CONDITION_MARKERS,
+        'tSNE1','tSNE2',
+        paste('Expression of ',name_of_this_gene,' (',celltype_for_these_markers,')', sep=''),
+        col_vector,
+        selected_gene_expression_varname='selected_gene_expression',
+        savelocation=savelocation
+        )
+    
+    # Retrieve the different subplots
+    p_tsne_cond_clust_expr<-ppplist[1]
+    p_tsne_cond_clust_normal<-ppplist[2]
+    
+    # Save gradient only plot
+    print(p_tsne_cond_clust_expr) 
+    ggsave(paste(directory_with_data,'plots_MW/',SUBPLOTDIR,'tsne_1gene_expression2_',celltype_for_these_markers,'_',name_of_this_gene,'.pdf',sep=""), 
+          width=10, height=6)
+    ggsave(paste(directory_with_data,'plots_MW/',SUBPLOTDIR,'tsne_1gene_expression2_',celltype_for_these_markers,'_',name_of_this_gene,'.png',sep=""), 
+           width=10, height=6)
+    
+    # Also make plot as was done before
+    CONDITION_MARKERS <- c(15,16)
+    p_rooijstyle<-plot_scatter_gene_expression(
       df_tsne,'V1','V2','cluster_assignments','condition_factors',
       condition_names=shortdatasetnames,condition_markers=CONDITION_MARKERS,
       'tSNE1','tSNE2',
-      paste('Expression of ',name_of_this_gene,' (',celltype_for_these_markers,')', sep=''),
+      paste('Expression of ',name_of_this_gene,' (',celltype_for_these_markers,')',sep=''),
       col_vector,
-      selected_gene_expression_varname='selected_gene_expression',
-      savelocation=savelocation
-      )
-  
-  # Retrieve the different subplots
-  p_tsne_cond_clust_expr<-ppplist[1]
-  p_tsne_cond_clust_normal<-ppplist[2]
-  
-  # Save gradient only plot
-  print(p_tsne_cond_clust_expr) 
-  ggsave(paste(directory_with_data,'plots_MW/gradientplots/tsne_gene_expression2_',celltype_for_these_markers,'_',name_of_this_gene,'.pdf',sep=""), 
-        width=10, height=6)
-  ggsave(paste(directory_with_data,'plots_MW/gradientplots/tsne_gene_expression2_',celltype_for_these_markers,'_',name_of_this_gene,'.png',sep=""), 
-         width=10, height=6)
-  
-  # Also make plot as was done before
-  CONDITION_MARKERS <- c(15,16)
-  p_rooijstyle<-plot_scatter_gene_expression(
-    df_tsne,'V1','V2','cluster_assignments','condition_factors',
-    condition_names=shortdatasetnames,condition_markers=CONDITION_MARKERS,
-    'tSNE1','tSNE2',
-    paste('Expression of ',name_of_this_gene,' (',celltype_for_these_markers,')',sep=''),
-    col_vector,
-    selected_gene_expression_varname='selected_gene_expression'
-  )
-  print(p_rooijstyle)
-  ggsave(paste(directory_with_data,'plots_MW/gradientplots/tsne_gene_expression_',celltype_for_these_markers,'_',name_of_this_gene,'.pdf',sep=""), width=10, height=6)
-  ggsave(paste(directory_with_data,'plots_MW/gradientplots/tsne_gene_expression_',celltype_for_these_markers,'_',name_of_this_gene,'.png',sep=""), width=10, height=6)
-  
+      selected_gene_expression_varname='selected_gene_expression'
+    )
+    print(p_rooijstyle)
+    ggsave(paste(directory_with_data,'plots_MW/gradientplots/tsne_gene_expression_',celltype_for_these_markers,'_',name_of_this_gene,'.pdf',sep=""), width=10, height=6)
+    ggsave(paste(directory_with_data,'plots_MW/gradientplots/tsne_gene_expression_',celltype_for_these_markers,'_',name_of_this_gene,'.png',sep=""), width=10, height=6)
+    
+  }
+  print("one markerlist done")
 }
-print("loop done")
+print("all markers done")
 
 # Additional standard plot as people made it before ----------------------------------------
 
-
+# ============================================================================================
 # Now calculate the differential gene expression =============================================
+# ============================================================================================
 
 # First for the two conditions ---------------------------------------------------------------
 
@@ -415,7 +469,81 @@ for (ii in seq(1,nr_of_clusters)) {
 
 }
 
+# ======================================================================================================
+# Checking out differential gene expression using built-in raceid code
+# ======================================================================================================
 
 
+cdiff <- clustdiffgenes(groupedSCS$Combined,pvalue=.01)
+# now e.g. cdiff$cl.1 gives a table with
+# - mean.ncl mean of not in cluster
+# - mean.cl  mean of in clusrter
+# - fc fold change inside-vs-outside
+# - pv p value
 
+# First store these values in text files
+for ( n in names(cdiff) ) write.table(
+  data.frame(GENEID=rownames(cdiff[[n]]), cdiff[[n]]), paste(
+    paste("cell_clust_diff_genes",sub("\\.","\\_",n), sep="_"), ".xls",
+    sep=""), row.names=FALSE, col.names=TRUE, sep="\t", quote=FALSE)
+
+# And then plot the outputs
+nr_of_clusters_race <- length(cdiff)
+for (ii in seq(1,nr_of_clusters_race)) {
+  
+  current_cluster_name <- paste('cl.',toString(ii),sep="")
+  current_cluster_table <- cdiff[[current_cluster_name]]
+  
+  # Get names for all genes
+  all_gene_names_race<-rownames(current_cluster_table)
+  all_gene_names_race_short<-str_replace_all(all_gene_names_race,'_.*','')
+  # set up dataframe with that info
+  differential_cluster_race_df <- data_frame(all_gene_names=all_gene_names_race, 
+                                            cond1_average_gene_expression=current_cluster_table$mean.cl,
+                                            cond2_average_gene_expression=current_cluster_table$mean.ncl,
+                                            differential_expression=current_cluster_table$fc,
+                                            differential_expression_inv=1/current_cluster_table$fc,
+                                            original_nr=factor(1:length(all_gene_names)))
+  # Now sort
+  differential_cluster_race_df<-differential_cluster_race_df[order(-differential_cluster_race_df$differential_expression),]
+  #differential_conditions_df$n123<-factor(differential_conditions_df$n123, levels=differential_conditions_df$n123)
+  
+  # Select highest values
+  selected_data_df<-differential_cluster_race_df[1:20,]
+  n123=factor(1:nrow(selected_data_df), levels=1:nrow(selected_data_df))
+  n123ro=factor(1:nrow(selected_data_df), levels=nrow(selected_data_df):1) # ro = reverse order
+  selected_data_df<-mutate(selected_data_df,
+                           n123=n123,
+                           n123ro=n123ro)
+  
+  # Now make a bar plot
+  barplot_differential_expression(selected_data_df=selected_data_df,centers_varname='n123ro',
+                                  differential_expression_varname='differential_expression',
+                                  all_gene_names=all_gene_names_race_short,
+                                  lowcol='red',highcol='firebrick4',ylabtext='Times higher in cluster',
+                                  mytitle=paste('Differential gene expression cluster ',toString(ii),'',sep=''))
+  # Save 'm
+  ggsave(paste(directory_with_data,'plots_MW/differential_expression_race_cluster',toString(ii),'_higher.pdf',sep=""), width=10, height=6)
+  ggsave(paste(directory_with_data,'plots_MW/differential_expression_race_cluster',toString(ii),'_higher.png',sep=""), width=10, height=6)
+  
+  # Select the lowest values
+  selected_data_df_low<-differential_cluster_race_df[nrow(differential_cluster_race_df):(nrow(differential_cluster_race_df)-19),]
+  n123=factor(1:nrow(selected_data_df_low), levels=1:nrow(selected_data_df_low))
+  n123ro=factor(1:nrow(selected_data_df_low), levels=nrow(selected_data_df_low):1)  # ro = reverse order
+  selected_data_df_low<-mutate(selected_data_df_low,
+                               n123=n123,
+                               n123ro=n123ro)
+  
+  # Now make a bar plot
+  barplot_differential_expression(selected_data_df=selected_data_df_low,centers_varname='n123ro',
+                                  differential_expression_varname='differential_expression_inv',
+                                  all_gene_names=all_gene_names_race_short,
+                                  lowcol='skyblue',highcol='midnightblue',ylabtext='Times lower in cluster',
+                                  mytitle=paste('Differential gene expression cluster ',toString(ii),'',sep=''))
+  
+  # Save 'm
+  ggsave(paste(directory_with_data,'plots_MW/differential_expression_race_cluster',toString(ii),'_lower.pdf',sep=""), width=10, height=6)
+  ggsave(paste(directory_with_data,'plots_MW/differential_expression_race_cluster',toString(ii),'_lower.png',sep=""), width=10, height=6)
+
+}
 
