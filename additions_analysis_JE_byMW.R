@@ -142,20 +142,17 @@ cclmo<-clustheatmap(groupedSCS$Combined,final=T)
 # You need to have run the previous section to do this =============================================
 # ==================================================================================================
 
-celltype_for_these_markers <- 'Epicardial'
-list_of_interesting_genes <- c('^WT1_','^TBX18_','^ADLH1A2_','^ZO1_','^BNC1_','^ANXA8_','^K18_','^KRT8_','^KRT19_','^GPM6A_','^UP1KB','^CDH1_','^UPK3B_')
+# TODO: is ADLH1A2_ a typo??? ALDH1A2 perhaps? seems so: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5772986/
 
-celltype_for_these_markers <- 'Fat'
-list_of_interesting_genes <- c('^PPARG_','^PPARGC1A_','^UCP1_','^EDNRB_','^CEBPA_','^CEBPB_','^EBF3_','^RORA_','^FABP4_','^^PLIN__','^PDGFRA_','^ADIPOQ_','^LEP_','^DLK1_','^APOE_','^LIPE_','^GLUT4_','^KLF5_')	
+marker_list_of_lists <- list(list('^WT1_','^TBX18_','^ADLH1A2_','^ALDH1A2_','^ZO1_','^BNC1_','^ANXA8_','^K18_','^KRT8_','^KRT19_','^GPM6A_','^UP1KB','^CDH1_','^UPK3B_'),
+                             list('^PPARG_','^PPARGC1A_','^UCP1_','^EDNRB_','^CEBPA_','^CEBPB_','^EBF3_','^RORA_','^FABP4_','^^PLIN__','^PDGFRA_','^ADIPOQ_','^LEP_','^DLK1_','^APOE_','^LIPE_','^GLUT4_','^KLF5_'),
+                             list('^FN1_','^POSTN_','^VIM_','^ACTA2_','^COL1A1_','^COL1A2_','^COL2A1_','^COL9A1_','^CDH2_','^FSTL1_','^COL3A1_','^GSN_','^FBLN2_','^SPARC_','^MMP_','^DDR2_','^FSP1_','^PDGFRA_','^THY1_','^FLNA_','^KLF5_'),
+                             list('^TFAP2A_','^TFAP2B_','^TFAP2C_','^TFAP2D_','^TFAP2E_'),
+                             list('^PKP2_','^DSP_','^DSC2_','^DSG2_','^JUP_','^GJA1_'))
 
-celltype_for_these_markers <- 'Fibroblast'
-list_of_interesting_genes <- c('^FN1_','^POSTN_','^VIM_','^ACTA2_','^COL1A1_','^COL1A2_','^COL2A1_','^COL9A1_','^CDH2_','^FSTL1_','^COL3A1_','^GSN_','^FBLN2_','^SPARC_','^MMP_','^DDR2_','^FSP1_','^PDGFRA_','^THY1_','^FLNA_','^KLF5_')
+marker_names_list <- list('Epicardial','Fat','Fibroblast','Differentiators','Desmosome')
 
-celltype_for_these_markers <- 'Differentiators'
-list_of_interesting_genes <- c('^TFAP2A_','^TFAP2B_','^TFAP2C_','^TFAP2D_','^TFAP2E_')
-
-celltype_for_these_markers <- 'Desmosome'
-list_of_interesting_genes <- c('^PKP2_','^DSP_','^DSC2_','^DSG2_','^JUP_','^GJA1_')
+SUBPLOTDIR='markers_arwa/'
 
 # ==================================================================================================
 
@@ -188,9 +185,9 @@ marker_names_list <- list('Neurotrophic',
                           'mt_biogenesis',
                           'mt_fusion')
 
-# ==================================================================================================
+SUBPLOTDIR='markers_iliana/'
 
-SUBPLOTDIR='markers_Iliana/'
+# ==================================================================================================
 
 for (marker_idx in 1:length(marker_names_list)) {
   
@@ -252,19 +249,8 @@ for (marker_idx in 1:length(marker_names_list)) {
   ggsave(paste(directory_with_data,'plots_MW/',SUBPLOTDIR,'histogram_gene_expression2_',celltype_for_these_markers,'.pdf',sep=""), width=10, height=6)
   ggsave(paste(directory_with_data,'plots_MW/',SUBPLOTDIR,'histogram_gene_expression2_',celltype_for_these_markers,'.png',sep=""), width=10, height=6)
 
-  # OK now go ahead
-  
-  # Not needed any more
-  #GENE_OF_INTEREST<-3625 # KRT19__chr17 (epi)
-  #GENE_OF_INTEREST<-371 # APOE__chr19 (fat)
-  #GENE_OF_INTEREST<-5063 # PDGFRA__chr4 (fibro)
-  #GENE_OF_INTEREST<-1480 # COL1A1__chr17 (fibro)
-  #GENE_OF_INTEREST<-7216 # TFAP2A__chr6
-  #GENE_OF_INTEREST<-1994 # DSG2__chr18
-  #GENE_OF_INTEREST<-8059 # WT1__chr11  FOUND; index=  8059 ."
-  #GENE_OF_INTEREST<-12815 # "PPARG__chr3  FOUND; index=  12815 ."
-  #GENE_OF_INTEREST<-18261# "WT1__chr11  FOUND; index=  18261 ."
-  
+  # OK now go ahead with tsne overviews
+
   # Run over genes automatically
   for (GENE_OF_INTEREST in list_of_genes_of_interest) {
     
@@ -317,13 +303,15 @@ for (marker_idx in 1:length(marker_names_list)) {
       selected_gene_expression_varname='selected_gene_expression'
     )
     print(p_rooijstyle)
-    ggsave(paste(directory_with_data,'plots_MW/gradientplots/tsne_gene_expression_',celltype_for_these_markers,'_',name_of_this_gene,'.pdf',sep=""), width=10, height=6)
-    ggsave(paste(directory_with_data,'plots_MW/gradientplots/tsne_gene_expression_',celltype_for_these_markers,'_',name_of_this_gene,'.png',sep=""), width=10, height=6)
+    ggsave(paste(directory_with_data,'plots_MW/',SUBPLOTDIR,'/tsne_gene_expression_',celltype_for_these_markers,'_',name_of_this_gene,'.pdf',sep=""), width=10, height=6)
+    ggsave(paste(directory_with_data,'plots_MW/',SUBPLOTDIR,'/tsne_gene_expression_',celltype_for_these_markers,'_',name_of_this_gene,'.png',sep=""), width=10, height=6)
     
   }
   print("one markerlist done")
 }
 print("all markers done")
+
+#rm('SUBPLOTDIR')
 
 # Additional standard plot as people made it before ----------------------------------------
 
