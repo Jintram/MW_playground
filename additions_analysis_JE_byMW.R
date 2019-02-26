@@ -584,19 +584,24 @@ idxs_of_all_other<-c(1:(gene_of_interest_idx-1),(gene_of_interest_idx+1):nr_of_g
 one_gene                   <-thedatatoday[gene_of_interest_idx,]
 all_other_genes_expression <-thedatatoday[idxs_of_all_other,]
 
-corrfn<-function(one_gene_expr,other_gene_expr,cutoff=1){
+# this correlation function correlates the expression of two genes against 
+# each other. by using the apply function, it can be used for obtaining
+# multiple correlation coefficients for 1 vs. many genes.
+# cutoff = -1
+# cutoff = in range 0 to 1
+#     gene of interest w/ values is selected, while : throw out genes 
+corrfn<-function(other_gene_expr,one_gene_expr,cutoff=1){
   
-  # remove zero columns from data
-  case_when(
-    selection_option==1 ~ 
+  # identify selection criteria
+  if (cutoff==-1) {
       idx_sel<-which(one_gene_expr>0.1 & other_gene_expr>0.1)
-    selection_option<1 ~ 
+  } else if(cutoff<=1 & cutoff>0) {
       idx_sel<-which(one_gene_expr>0.1 & sum(as.numeric((other_gene_expr>0.1)))/length(other_gene_expr)>cutoff )
-    selection_option==0 ~ 
+  } else if (cutoff==0){
       idx_sel<-which(one_gene_expr>0.1)
-  )
+  } else {  stop()  }
   
-  # perform correlation
+  # perform correlation using selection criteria
   if (length(idx_sel)>2) {
     out<-cor.test(one_gene_expr[idx_sel],other_gene_expr[idx_sel])
     mycorr<-c(out$estimate, out$p.value)
@@ -605,30 +610,17 @@ corrfn<-function(one_gene_expr,other_gene_expr,cutoff=1){
     mycorr<-NaN
   }
   
+  # return correlation
   return(mycorr)
 }
 
 # How many cells have non-zero value of gene of interest?
 histogram(as.numeric(one_gene))
-# get indices of non-zero values
-idxs_non_zero<-which(one_gene>0.1)
-# create subset of other genes
-one_gene_sel                   <-one_gene[,idxs_non_zero]
-all_other_genes_expression_sel <-all_other_genes_expression[,idxs_non_zero]
-
-# show example of a scatter plot
-plot_df=data_frame(x=t(one_gene_sel),y=t(all_other_genes_expression_sel[1,]))
-ggplot(data=plot_df)+
-  geom_point(aes(x=x,y=y))
-# show example of a scatter plot
-plot_df=data_frame(x=one_gene_sel_num[idx_both],y=other_gene_sel_num[idx_both])
-ggplot(data=plot_df)+
-  geom_point(aes(x=x,y=y))
 
 # perform correlations
-all_other_genes_expression_sel_mat<-as.matrix(all_other_genes_expression_sel)
-one_gene_sel_vec<-as.numeric(one_gene_sel)
-my_correlations<-apply(all_other_genes_expression_sel_mat,2,corrfn,other_gene_expr=one_gene_sel_vec)
+all_other_genes_expression_mat<-as.matrix(all_other_genes_expression)
+one_gene_vec<-as.numeric(one_gene)
+my_correlations<-apply(all_other_genes_expression_mat,2,corrfn,one_gene_expr=one_gene_vec)
 
 #my_correlations<-apply(all_other_genes_expression_sel_mat,FUN=corrfn,other_gene_expr=one_gene_sel_vec,MARGIN=1)
 #test_result<-    apply(test_matrix,2,myfun,y=c(1,2,3))
