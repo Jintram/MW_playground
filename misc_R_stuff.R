@@ -73,5 +73,19 @@ ggplot(data=testdata, mapping=aes(x=c, y=y))+
 
 
 
+# using the apply function to matrix rows
+myfun<-function(x,y){
+  x+y
+}
+to_add = c(1,2,3)
+test_matrix=matrix(c(1,1,1,
+                     2,2,2,
+                     3,3,3),ncol=3)
+test_result<-apply(test_matrix,2,myfun,y=c(1,2,3))
+
+
+
+
+
 
 

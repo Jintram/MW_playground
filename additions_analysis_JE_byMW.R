@@ -187,6 +187,30 @@ marker_names_list <- list('Neurotrophic',
 
 SUBPLOTDIR='markers_iliana/'
 
+# ================================================================================================== 
+
+marker_list_of_lists <- list(list('^GATA4_'))
+
+# and their names
+marker_names_list <- list('GATA4')
+
+SUBPLOTDIR='markers_arwa/'
+
+# ================================================================================================== 
+
+marker_list_of_lists <- list(list('^AXIN2_',
+                                  '^TCF4_',
+                                  '^ALDH1A1_',
+                                  '^CCND1_',
+                                  '^CCND2_',
+                                  '^WNT3A_',
+                                  '^WNT5A_'))
+
+# and their names
+marker_names_list <- list('Wnt')
+
+SUBPLOTDIR='markers_arwa/'
+
 # ==================================================================================================
 
 for (marker_idx in 1:length(marker_names_list)) {
@@ -534,4 +558,130 @@ for (ii in seq(1,nr_of_clusters_race)) {
   ggsave(paste(directory_with_data,'plots_MW/differential_expression_race_cluster',toString(ii),'_lower.png',sep=""), width=10, height=6)
 
 }
+
+# ====================================================================================================
+# Now some correlation analysis one gene of interest vs. all others
+# ====================================================================================================
+
+# Method by Bas to correlate one vs. all
+
+MYGENENAME<-'^NGF_'
+MYGENENAME<-'^GATA4_'
+
+correlationResult = analyseCorrelation(config, groupedSCS, geneName=MYGENENAME, groupName='Combined', removeNoExpressCells = 'goi', percentage=20) # default = 20
+plotCorrelationVolcano(config, correlationResult=correlationResult, coefficientCutoff=0.25, pValueCutoff=1/10^5, outputMode='show')
+
+# ====================================================================================================
+# Method by me to correlate one vs. all
+
+thedatatoday <- groupedSCS$Combined@ndata
+gene_names <- rownames(thedatatoday)
+nr_of_genes <- nrow(thedatatoday)
+
+gene_of_interest_idx <- get_idx_for_gene_name(gene_names,MYGENENAME)
+idxs_of_all_other<-c(1:(gene_of_interest_idx-1),(gene_of_interest_idx+1):nr_of_genes)
+
+one_gene                   <-thedatatoday[gene_of_interest_idx,]
+all_other_genes_expression <-thedatatoday[idxs_of_all_other,]
+
+corrfn<-function(one_gene_expr,other_gene_expr,cutoff=1){
+  
+  # remove zero columns from data
+  case_when(
+    selection_option==1 ~ 
+      idx_sel<-which(one_gene_expr>0.1 & other_gene_expr>0.1)
+    selection_option<1 ~ 
+      idx_sel<-which(one_gene_expr>0.1 & sum(as.numeric((other_gene_expr>0.1)))/length(other_gene_expr)>cutoff )
+    selection_option==0 ~ 
+      idx_sel<-which(one_gene_expr>0.1)
+  )
+  
+  # perform correlation
+  if (length(idx_sel)>2) {
+    out<-cor.test(one_gene_expr[idx_sel],other_gene_expr[idx_sel])
+    mycorr<-c(out$estimate, out$p.value)
+    names(mycorr)<-c("cor","pvalue")
+  } else {
+    mycorr<-NaN
+  }
+  
+  return(mycorr)
+}
+
+# How many cells have non-zero value of gene of interest?
+histogram(as.numeric(one_gene))
+# get indices of non-zero values
+idxs_non_zero<-which(one_gene>0.1)
+# create subset of other genes
+one_gene_sel                   <-one_gene[,idxs_non_zero]
+all_other_genes_expression_sel <-all_other_genes_expression[,idxs_non_zero]
+
+# show example of a scatter plot
+plot_df=data_frame(x=t(one_gene_sel),y=t(all_other_genes_expression_sel[1,]))
+ggplot(data=plot_df)+
+  geom_point(aes(x=x,y=y))
+# show example of a scatter plot
+plot_df=data_frame(x=one_gene_sel_num[idx_both],y=other_gene_sel_num[idx_both])
+ggplot(data=plot_df)+
+  geom_point(aes(x=x,y=y))
+
+# perform correlations
+all_other_genes_expression_sel_mat<-as.matrix(all_other_genes_expression_sel)
+one_gene_sel_vec<-as.numeric(one_gene_sel)
+my_correlations<-apply(all_other_genes_expression_sel_mat,2,corrfn,other_gene_expr=one_gene_sel_vec)
+
+#my_correlations<-apply(all_other_genes_expression_sel_mat,FUN=corrfn,other_gene_expr=one_gene_sel_vec,MARGIN=1)
+#test_result<-    apply(test_matrix,2,myfun,y=c(1,2,3))
+# histogram(my_correlations)
+
+
+# cor.test(plot_df$x,plot_df$y)
+
+
+# ===================================================================
+# test code
+# ===================================================================
+
+p<-ggplot()+
+  xlab('my one gene')+
+  ylab('other gene x')+
+  coord_fixed(ratio = 1)+
+  give_better_textsize_plot(15)
+
+failed<-0
+correlations<-list()
+for (idx in seq(1,5)){
+  #idx=2
+  
+  # select a row (=gene)
+  other_gene_sel <- all_other_genes_expression_sel_mat[idx,]
+  
+  # convert index to numeric vectors
+  one_gene_sel_num    <- as.numeric(one_gene_sel)
+  other_gene_sel_num  <- as.numeric(other_gene_sel)
+  
+  # remove zero columns from data
+  idx_both<-which(one_gene_sel_num>0.1 & other_gene_sel_num>0.1)
+  
+  idx_both
+  if (length(idx_both)>1){
+    # scatter plot 
+    plot_df=data_frame(x=one_gene_sel_num[idx_both],y=other_gene_sel_num[idx_both])
+    p<-p+geom_point(data=plot_df,aes(x=x,y=y),color=col_vector[idx],shape=idx,size=5)
+    
+    # perform correlation
+    out<-cor.test(one_gene_sel_num[idx_both],other_gene_sel_num[idx_both])
+    
+    correlations[length(correlations)+1]<-out$estimate
+  }else{
+    print("Not enough data")
+    failed<-failed+1
+  }
+}
+
+correlations
+failed
+p
+
+
 
