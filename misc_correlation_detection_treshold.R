@@ -1,63 +1,74 @@
 
 # Example of correlation and detection limit ========================================
 
+# Range of interaction and noise
+#IND_MAX=50 # independent parameter max (noise range)
+IND_MAX=100 # independent parameter max (noise range)
+DEP_MAX=50 # dependent parameter max (interaction range)
+# Choose an artificial limit
+LIMX <- 50
+LIMY <- 50
+
+# Generate data
 var_c <- runif(50, min=0, max=DEP_MAX)
-var_x <- runif(50, min=0, max=IND_MAX)+var_c
-var_y <- runif(50, min=0, max=IND_MAX)+var_c
+#var_x <- runif(50, min=0, max=IND_MAX)+var_c
+#var_y <- runif(50, min=0, max=IND_MAX)+var_c
+var_x <- runif(50, min=0, max=IND_MAX)#+var_c
+var_y <- runif(50, min=0, max=IND_MAX)#+var_c
 
 # plot
 df_xy<-data_frame(x=var_x,y=var_y)
 ggplot(data=df_xy)+
-  geom_point(aes(x=x,y=y))
+  geom_point(aes(x=x,y=y))+
+  give_better_textsize_plot(15)+
+  xlab('Expression gene 1')+ylab('Expression gene 2')+
+  geom_hline(aes(yintercept=LIMY),linetype=2)+
+  geom_vline(aes(xintercept=LIMX),linetype=2)
 
 # Check correlation
 cor.test(var_x,var_y)
 
-# Systematic approach =====================
+# Introduce the artificial detection limit
+var_x_det <- var_x
+var_x_det[var_x_det<LIMX] <- LIMX
+var_y_det <- var_y
+var_y_det[var_y_det<LIMY] <- LIMY
+
+# plot  -----------------------------------------------------------------------------
+df_xy<-data_frame(x=var_x_det,y=var_y_det)
+ggplot(data=df_xy)+
+  geom_point(aes(x=x,y=y))+
+  give_better_textsize_plot(15)+
+  xlab('Expression gene 1')+ylab('Expression gene 2')+
+  ylim(0,100)+xlim(0,100)
+  
+# Check correlation
+cor.test(var_x,var_y)
+
+# Systematic approach ====================================================================================
 
 # Range of interaction and noise
-IND_MAX=50 # independent parameter max (noise range)
-DEP_MAX=50 # dependent parameter max (interaction range)
+IND_MAX=100 # independent parameter max (noise range)
+DEP_MAX=0 # dependent parameter max (interaction range)
+#IND_MAX=50 # independent parameter max (noise range)
+#DEP_MAX=50 # dependent parameter max (interaction range)
 
 # Initialize plot
 p<-ggplot()+
   give_better_textsize_plot(15)+
-  xlab('Signal detected above ..')+ylab('Correlation')
+  xlab('Signal detected above ..')+ylab('Correlation')+
+  ylim(-1,1)
 
+# Repeat everything five times (just to see what happens due to randomness)
 for (repeats in seq(1,5)) {
 
-  # Example of correlation and detection limit ========================================
+  # Generate data
 
   var_c <- runif(50, min=0, max=DEP_MAX)
   var_x <- runif(50, min=0, max=IND_MAX)+var_c
   var_y <- runif(50, min=0, max=IND_MAX)+var_c
   
-  # plot
-  df_xy<-data_frame(x=var_x,y=var_y)
-  ggplot(data=df_xy)+
-    geom_point(aes(x=x,y=y))
-  
-  # Check correlation
-  cor.test(var_x,var_y)
-  
-  # Now introduce an artificial detection limit ========================================
-  
-  LIMX <- 50
-  LIMY <- 50
-  var_x_det <- var_x
-  var_x_det[var_x_det<LIMX] <- LIMX
-  var_y_det <- var_y
-  var_y_det[var_y_det<LIMY] <- LIMY
-  
-  # plot
-  df_xy<-data_frame(x=var_x_det,y=var_y_det)
-  ggplot(data=df_xy)+
-    geom_point(aes(x=x,y=y))
-  
-  # Check correlation
-  cor.test(var_x,var_y)
-  
-  # Now sweep over parameter range and calculate corr for range ======================================== 
+  # Now sweep over parameter range and calculate corr for range
   
   # Set a sequence of detection limits
   LIMSEQ <- seq(0,100) 

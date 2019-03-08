@@ -1,6 +1,10 @@
 
 require('scales')
 require("RColorBrewer")
+require('dplyr')
+require('grid')
+require('gridExtra')
+
 
 conversion_searchterms <- c('HUB-AK-003', 'HUB-AK-004', 'HUB-AK-005' , 'HUB-AK-006')
 conversion_numbers     <- factor(c(1,1,2,2), levels= seq(0,NR_CONDITIONS))
@@ -189,10 +193,10 @@ SUBPLOTDIR='markers_iliana/'
 
 # ================================================================================================== 
 
-marker_list_of_lists <- list(list('^GATA4_'))
+marker_list_of_lists <- list(list('^GATA4_','^NRTN_'))
 
 # and their names
-marker_names_list <- list('GATA4')
+marker_names_list <- list('misc')
 
 SUBPLOTDIR='markers_arwa/'
 
@@ -210,6 +214,46 @@ marker_list_of_lists <- list(list('^AXIN2_',
 marker_names_list <- list('Wnt')
 
 SUBPLOTDIR='markers_arwa/'
+
+
+# ==================================================================================================
+
+SUBPLOTDIR='markers_iliana2/'
+
+marker_list_of_lists<-list(
+list('^SLC22A5_','^CPT1A_','^CPT1B_','^CPT1C_','^SLC25A2_','^CPT2_','^ACADVL_','^ACADM_','^ACADS_','^HADHA_','^HADHB_','^HADH_','^ACAA2_','^ETFDH_','^ETFA_','^ETFB_','^DECR1_'),
+list('^PNPLA2_','^LIPE_','^MGLL_','^PNPLA3_','^PNPLA4_','^CES1_','^ABHD5_','^G0S2_','^PLIN1_','^PLIN2_','^PLIN3_','^PLIN5_','^CIDEC_','^FOXO1_','^FABP4_','^CAV1_','^AQP7_'),
+list('^ACACA_','^FASN_','^DGAT1_','^AGPAT2_','^SREBF1_'),
+list('^PPARGC1A_','^CRTC3_','^NRF1_','^ESRRA_')
+)
+
+marker_names_list <- list('FAO',
+                          'Lipolysis',
+                          'Lipogenesis',
+                          'mt biogenesis')
+# ==================================================================================================
+
+SUBPLOTDIR='markers_iliana3/'
+
+marker_list_of_lists<-list(
+  list('^BDNF_','^NTF4_','^NTF3_'),
+  list('^CNTF_','^CTF1_','^OSM_','^TNF_'), # CNTF aka ^HCNTF_ // OSM aka '^MGC20461_',
+  list('^NRTN_','^ARTN_','^PSPN_')
+)
+
+marker_names_list <- list('Neurotrophins',
+                          'Neurokines',
+                          'GDNF_family')
+
+# ==================================================================================================
+
+SUBPLOTDIR='markers_andrea/'
+
+marker_list_of_lists<-list(
+  list('^AHCYL1_','^SCEL_','^SPATA22_', '^WT1_')#' spata22 aka ^NYD-SP20_')#
+)
+
+marker_names_list <- list('yeast2hybrid')
 
 # ==================================================================================================
 
@@ -567,9 +611,32 @@ for (ii in seq(1,nr_of_clusters_race)) {
 
 MYGENENAME<-'^NGF_'
 MYGENENAME<-'^GATA4_'
+MYGENENAME<-'^TFAP2A_'
 
-correlationResult = analyseCorrelation(config, groupedSCS, geneName=MYGENENAME, groupName='Combined', removeNoExpressCells = 'goi', percentage=20) # default = 20
-plotCorrelationVolcano(config, correlationResult=correlationResult, coefficientCutoff=0.25, pValueCutoff=1/10^5, outputMode='show')
+correlationResult = analyseCorrelation(config, groupedSCS, geneName=MYGENENAME, groupName='Combined', removeNoExpressCells = 'no', percentage=0) # default = 20
+# Create plot of less stringent correlation method ------------------------------------------------
+vulcan_out1<-plotCorrelationVolcano(config, correlationResult=correlationResult, coefficientCutoff=0.25, pValueCutoff=1/10^5, outputMode='show')
+p1<-last_plot()
+p1<-p1+xlim(-1,1)
+p1
+ggsave(paste(directory_with_data,'plots_MW/vulcano/MW_',MYGENENAME,'_',Sys.time(),'.pdf',sep=""), width=10, height=6)
+ggsave(paste(directory_with_data,'plots_MW/vulcano/MW_',MYGENENAME,'_',Sys.time(),'.png',sep=""), width=10, height=6)
+# Second vulcano with different cutoff
+vulcan_out2<-plotCorrelationVolcano(config, correlationResult=correlationResult, coefficientCutoff=0.4, pValueCutoff=0.05, outputMode='show')
+p2<-last_plot()
+p2<-p2+xlim(-1,1)
+p2
+ggsave(paste(directory_with_data,'plots_MW/vulcano/MW_',MYGENENAME,'_',Sys.time(),'.pdf',sep=""), width=10, height=6)
+ggsave(paste(directory_with_data,'plots_MW/vulcano/MW_',MYGENENAME,'_',Sys.time(),'.png',sep=""), width=10, height=6)
+
+# Create more stringent Bas params  ------------------------------------------------
+correlationResult_stringent = analyseCorrelation(config, groupedSCS, geneName=MYGENENAME, groupName='Combined', removeNoExpressCells = 'goi', percentage=20) # default = 20
+plotCorrelationVolcano(config, correlationResult=correlationResult_stringent, coefficientCutoff=0.25, pValueCutoff=1/10^5, outputMode='show')
+p3<-last_plot()
+p3<-p3+xlim(-1,1)
+p3
+ggsave(paste(directory_with_data,'plots_MW/vulcano/Bas_',MYGENENAME,'_',Sys.time(),'.pdf',sep=""), width=10, height=6)
+ggsave(paste(directory_with_data,'plots_MW/vulcano/Bas_',MYGENENAME,'_',Sys.time(),'.png',sep=""), width=10, height=6)
 
 # ====================================================================================================
 # Method by me to correlate one vs. all
@@ -580,6 +647,8 @@ nr_of_genes <- nrow(thedatatoday)
 
 gene_of_interest_idx <- get_idx_for_gene_name(gene_names,MYGENENAME)
 idxs_of_all_other<-c(1:(gene_of_interest_idx-1),(gene_of_interest_idx+1):nr_of_genes)
+
+gene_of_interest_name <- gene_names[gene_of_interest_idx]
 
 one_gene                   <-thedatatoday[gene_of_interest_idx,]
 all_other_genes_expression <-thedatatoday[idxs_of_all_other,]
@@ -615,7 +684,11 @@ corrfn<-function(other_gene_expr,one_gene_expr,cutoff=1){
 }
 
 # How many cells have non-zero value of gene of interest?
-histogram(as.numeric(one_gene))
+p<-histogram(as.numeric(one_gene),
+          xlab = paste('Gene expression ',gene_of_interest_name,sep=""))
+ggsave(paste(directory_with_data,'plots_MW/vulcano/Histogram_',MYGENENAME,'_',Sys.time(),'.pdf',sep=""), width=10, height=6)
+ggsave(paste(directory_with_data,'plots_MW/vulcano/Histogram_',MYGENENAME,'_',Sys.time(),'.png',sep=""), width=10, height=6)
+p
 
 # perform correlations
 all_other_genes_expression_mat<-as.matrix(all_other_genes_expression)

@@ -111,7 +111,8 @@ plot_scatter_gene_expression<-function(df_toplot,x,y,cluster_assignments_varname
                                                                  myxlabel,myylabel,mytitle,col_vector,selected_gene_expression_varname) {
   
   TEXTSIZE=15
-  
+  #colorScheme<-brewer.pal(3,"Spectral")
+
   # The gene expression plot
   p1<-ggplot(data=df_toplot)+
     geom_point(aes_string(x=x,y=y,
@@ -119,8 +120,10 @@ plot_scatter_gene_expression<-function(df_toplot,x,y,cluster_assignments_varname
                           shape=conditions_varname
                           ),
                size=2,alpha=0.8)+
-    scale_color_gradientn(colours = terrain.colors(7))+
-    scale_shape_manual(values=condition_markers,labels=condition_names)+
+    #scale_color_gradientn(colours = c('lightskyblue','red4'))+
+    scale_color_distiller(  palette="Spectral")+
+    #scale_color_gradient2(low=colorScheme[1], mid=colorScheme[2],  high=colorScheme[3], guide=guide_colorbar(barheight=15))+
+    #scale_shape_manual(values=condition_markers,labels=condition_names)+
     ggtitle(mytitle)+
     xlab(myxlabel)+ylab(myylabel)+
     theme(#legend.position="none",
@@ -134,7 +137,7 @@ plot_scatter_gene_expression<-function(df_toplot,x,y,cluster_assignments_varname
 }
 
 pump_out_freq_df<-function(p,gene_expression, color, shape) {
-  NR_BINS=40
+  NR_BINS=150 # 40
   
   mybinwidth=ceiling((max(gene_expression)+1)/NR_BINS)
   
