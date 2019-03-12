@@ -1,30 +1,46 @@
 
+# Some initial libraries and config parameters =========================================
+
 require('scales')
 require("RColorBrewer")
 require('dplyr')
 require('grid')
 require('gridExtra')
 
-
-conversion_searchterms <- c('HUB-AK-003', 'HUB-AK-004', 'HUB-AK-005' , 'HUB-AK-006')
-conversion_numbers     <- factor(c(1,1,2,2), levels= seq(0,NR_CONDITIONS))
-datasetnames <- c('IPS_pkp2_reverted', 'IPS_pkp2_mutant')
-shortdatasetnames <- c('reverted', 'mutant')
+# My own libraries
+source(paste0("/Users/m.wehrens/Documents/git_repos/MW_playing/","my_functions_standard_analysis.R"))
+source(paste0("/Users/m.wehrens/Documents/git_repos/MW_playing/","my_functions_standard_plots.R"))
 
 # Create wide array of colors
 n <- 60
 qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
 col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
 
+# Extra information is on which plate is what
+# This is needed for e.g. comparing expression
+conversion_searchterms <- c('HUB-AK-003', 'HUB-AK-004', 'HUB-AK-005' , 'HUB-AK-006')
+conversion_numbers     <- factor(c(1,1,2,2), levels= seq(0,NR_CONDITIONS))
+datasetnames <- c('IPS_pkp2_reverted', 'IPS_pkp2_mutant')
+shortdatasetnames <- c('reverted', 'mutant')
+
+# Create save directory MW
+subMW_outputDir_path<-paste0(directory_with_data,outputDir,'plots_MW/')
+if(!dir.exists(subMW_outputDir_path)) {dir.create(subMW_outputDir_path, showWarnings = TRUE, recursive = TRUE, mode = "0777")}
+
 # Gene expression compared between conditions ==========================================
 
 gene_of_interest <- 'LEPROTL1'
+gene_of_interest <- 'PKP2__chr12'
   
 # editing here to combine the two dataset distributions in one plot!
-gene_counts=list()
-freq_list=list()
+gene_counts<-list()
+freq_list<-list()
+gene_oi_realname<-list()
+sum_gene_counts<-list()
+zero_count<-list()
 freq_frame <- data.frame(centers=list(), counts=list(), dataset_id=factor())
 gene_counts_df <- data.frame(counts=numeric(), dataset_id=factor())
+gene_of_interest_idx<-numeric()
 for (ii in seq(1,length(datasetnames))) {
 
   datasetname<-datasetnames[ii]
@@ -79,6 +95,7 @@ ggplot(data=freq_frame, mapping=aes(x=centers, y=counts,fill=dataset_id)) +
 TEXTSIZE=15
 ggplot(gene_counts_df, aes(factor(dataset_id), counts)) + 
   geom_violin(aes(fill = dataset_id))+
+  #geom_boxplot(aes(fill = dataset_id))+
   scale_x_discrete(breaks=seq(1,length(datasetnames)),
                    labels=shortdatasetnames)+
   ggtitle(paste("Distribution of transcript counts of ", gene_oi_realname,'\nZero count = ',toString(zero_count))) +
@@ -126,8 +143,15 @@ pie(rep(1,n), col=sample(col_vector, n))
 p_tsne_cond_clust<-plot_scatter_w_highlighted_clusters_condition(df_tsne,'V1','V2','cluster_assignments','condition_factors',
                                               condition_names=shortdatasetnames,condition_markers=CONDITION_MARKERS,
                                               'tSNE1','tSNE2','Gene expression space',col_vector)
-ggsave(paste(directory_with_data,"plots_MW/tsne_highlights_cond_clust.pdf",sep=""), width=10, height=6)
-ggsave(paste(directory_with_data,"plots_MW/tsne_highlights_cond_clust.png",sep=""), width=10, height=6)
+print(p_tsne_cond_clust)
+
+# Create save directory MW
+subMW_outputDir_path<-paste0(directory_with_data,outputDir,'plots_MW/')
+if(!dir.exists(subMW_outputDir_path)) {dir.create(subMW_outputDir_path, showWarnings = TRUE, recursive = TRUE, mode = "0777")}
+
+# Save
+ggsave(paste(subMW_outputDir_path,"tsne_highlights_cond_clust.pdf",sep=""), width=10, height=6)
+ggsave(paste(subMW_outputDir_path,"tsne_highlights_cond_clust.png",sep=""), width=10, height=6)
 
 # ==================================================================================================
 # Create heat map ==================================================================================
@@ -238,12 +262,14 @@ SUBPLOTDIR='markers_iliana3/'
 marker_list_of_lists<-list(
   list('^BDNF_','^NTF4_','^NTF3_'),
   list('^CNTF_','^CTF1_','^OSM_','^TNF_'), # CNTF aka ^HCNTF_ // OSM aka '^MGC20461_',
-  list('^NRTN_','^ARTN_','^PSPN_')
+  list('^NRTN_','^ARTN_','^PSPN_'),
+  list('^NRP1_', '^SEMA3A_', '^BMP7_')
 )
 
 marker_names_list <- list('Neurotrophins',
                           'Neurokines',
-                          'GDNF_family')
+                          'GDNF_family',
+                          'Other')
 
 # ==================================================================================================
 
@@ -257,6 +283,30 @@ marker_names_list <- list('yeast2hybrid')
 
 # ==================================================================================================
 
+SUBPLOTDIR='markers_andrea2/'
+
+marker_list_of_lists<-list(
+  list('^PKP2_','^AGR3_','^AHCYl1_','^ALDH9A1_','^ANKRD11_','^ANXA1_','^AOX1_','^ATPF1B_','^C1orf100_','^CCDC80_','^CEP70_','^CHD3_','^COL1a2_','^COL3A1_','^COPS4_','^CTSB_','^CTSL_','^DLD_','^ELP1_','^EMC2_','^FMNL2_','^GAREM1_','^GCOM1_','^GOSR1_','^HECTD3_','^HSD17B2_','^IFT88_','^ITGB1_','^KIAA0586_','^KIZ_','^KLHL20_','^KLHL32_','^LRRC36_','^MCTP2_','^METTL23_','^MLH1_','^MNAT1_','^MYZAP_','^N4BP2L2_','^NCKAP1_','^NSMAF_','^PAN3_','^PDGFRB_','^PDHB_','^PHC1_','^PHKB_','^POLR1C_','^POLR2G_','^POLR3F_','^PPP2R1B_','^PREPL_','^PRR4_','^PSMC1_','^RIPOR1_','^RMND5A_','^SCAF11_','^SCEL_','^SFPQ_','^SPATA22_','^STAMBP_','^TOX4_','^TSPAN7_','^TTN_','^VIM_','^WDR19_','^WDR61_','^ZNF19_','^ZNF251_','^ZNF350_','^ZNF577_')  
+  )
+
+marker_names_list <- list('yeast2hybrid')
+
+# ==================================================================================================
+
+mylimits=NULL # can be used to impose custom limits
+# mylimits <- c(0,2*pkp2_expression_098)
+
+savesuffix=''
+
+if (!is.null(mylimits)) {
+  savesuffix='_customlims'
+}
+
+# make output directory
+outputDir_path<-paste0(directory_with_data, 'plots_MW/',SUBPLOTDIR)
+if(!dir.exists(outputDir_path)) {dir.create(outputDir_path, showWarnings = TRUE, recursive = TRUE, mode = "0777")}
+
+# perform analysis
 for (marker_idx in 1:length(marker_names_list)) {
   
   # now run over the marker list 
@@ -316,7 +366,8 @@ for (marker_idx in 1:length(marker_names_list)) {
   # Save
   ggsave(paste(directory_with_data,'plots_MW/',SUBPLOTDIR,'histogram_gene_expression2_',celltype_for_these_markers,'.pdf',sep=""), width=10, height=6)
   ggsave(paste(directory_with_data,'plots_MW/',SUBPLOTDIR,'histogram_gene_expression2_',celltype_for_these_markers,'.png',sep=""), width=10, height=6)
-
+    # p_overview_hist<-p_overview_hist+theme(legend.position = 'none'); p_overview_hist
+  
   # OK now go ahead with tsne overviews
 
   # Run over genes automatically
@@ -337,7 +388,7 @@ for (marker_idx in 1:length(marker_names_list)) {
     #or use mutate(df_tsne,)? I think that's not convenient when we update the parameter
     
     # Make the scatter plots
-    savelocation<-paste(directory_with_data,'plots_MW/',SUBPLOTDIR,'tsne_combined_cluster_genexpr_',celltype_for_these_markers,'_',name_of_this_gene,'.pdf',sep="")
+    savelocation<-paste(directory_with_data,'plots_MW/',SUBPLOTDIR,'tsne_combined_cluster_genexpr_',savesuffix,celltype_for_these_markers,'_',name_of_this_gene,'.pdf',sep="")
     ppplist<-
       plot_scatter_w_highlighted_clusters_condition_exprgrad(
         df_tsne,'V1','V2','cluster_assignments','condition_factors',
@@ -346,7 +397,8 @@ for (marker_idx in 1:length(marker_names_list)) {
         paste('Expression of ',name_of_this_gene,' (',celltype_for_these_markers,')', sep=''),
         col_vector,
         selected_gene_expression_varname='selected_gene_expression',
-        savelocation=savelocation
+        savelocation=savelocation,
+        mylimits=mylimits
         )
     
     # Retrieve the different subplots
@@ -355,9 +407,9 @@ for (marker_idx in 1:length(marker_names_list)) {
     
     # Save gradient only plot
     print(p_tsne_cond_clust_expr) 
-    ggsave(paste(directory_with_data,'plots_MW/',SUBPLOTDIR,'tsne_1gene_expression2_',celltype_for_these_markers,'_',name_of_this_gene,'.pdf',sep=""), 
+    ggsave(paste(directory_with_data,'plots_MW/',SUBPLOTDIR,'tsne_1gene_expression2_',savesuffix,celltype_for_these_markers,'_',name_of_this_gene,'.pdf',sep=""), 
           width=10, height=6)
-    ggsave(paste(directory_with_data,'plots_MW/',SUBPLOTDIR,'tsne_1gene_expression2_',celltype_for_these_markers,'_',name_of_this_gene,'.png',sep=""), 
+    ggsave(paste(directory_with_data,'plots_MW/',SUBPLOTDIR,'tsne_1gene_expression2_',savesuffix,celltype_for_these_markers,'_',name_of_this_gene,'.png',sep=""), 
            width=10, height=6)
     
     # Also make plot as was done before
@@ -368,11 +420,12 @@ for (marker_idx in 1:length(marker_names_list)) {
       'tSNE1','tSNE2',
       paste('Expression of ',name_of_this_gene,' (',celltype_for_these_markers,')',sep=''),
       col_vector,
-      selected_gene_expression_varname='selected_gene_expression'
+      selected_gene_expression_varname='selected_gene_expression',
+      mylimits=mylimits
     )
     print(p_rooijstyle)
-    ggsave(paste(directory_with_data,'plots_MW/',SUBPLOTDIR,'/tsne_gene_expression_',celltype_for_these_markers,'_',name_of_this_gene,'.pdf',sep=""), width=10, height=6)
-    ggsave(paste(directory_with_data,'plots_MW/',SUBPLOTDIR,'/tsne_gene_expression_',celltype_for_these_markers,'_',name_of_this_gene,'.png',sep=""), width=10, height=6)
+    ggsave(paste(directory_with_data,'plots_MW/',SUBPLOTDIR,'/tsne_gene_expression_',savesuffix,celltype_for_these_markers,'_',name_of_this_gene,'.pdf',sep=""), width=10, height=6)
+    ggsave(paste(directory_with_data,'plots_MW/',SUBPLOTDIR,'/tsne_gene_expression_',savesuffix,celltype_for_these_markers,'_',name_of_this_gene,'.png',sep=""), width=10, height=6)
     
   }
   print("one markerlist done")
@@ -380,6 +433,7 @@ for (marker_idx in 1:length(marker_names_list)) {
 print("all markers done")
 
 #rm('SUBPLOTDIR')
+
 
 # Additional standard plot as people made it before ----------------------------------------
 
@@ -629,14 +683,28 @@ p2
 ggsave(paste(directory_with_data,'plots_MW/vulcano/MW_',MYGENENAME,'_',Sys.time(),'.pdf',sep=""), width=10, height=6)
 ggsave(paste(directory_with_data,'plots_MW/vulcano/MW_',MYGENENAME,'_',Sys.time(),'.png',sep=""), width=10, height=6)
 
+# Put output into excel file
+# First sort
+vulcan_out1_sorted<-vulcan_out1[order(-vulcan_out1$correlation),]
+# Then output
+#library(xlsx)
+write.xlsx(vulcan_out1_sorted, paste0(directory_with_data,'plots_MW/vulcano/correlation_', MYGENENAME, '_withall.xlsx'))
+
+df<-data_frame(x=vulcan_out1_sorted$correlation,y=-log(vulcan_out1_sorted$pValue))
+ggplot(data=df)+
+  geom_point(aes(x=x,y=y))
+
 # Create more stringent Bas params  ------------------------------------------------
-correlationResult_stringent = analyseCorrelation(config, groupedSCS, geneName=MYGENENAME, groupName='Combined', removeNoExpressCells = 'goi', percentage=20) # default = 20
-plotCorrelationVolcano(config, correlationResult=correlationResult_stringent, coefficientCutoff=0.25, pValueCutoff=1/10^5, outputMode='show')
-p3<-last_plot()
-p3<-p3+xlim(-1,1)
-p3
-ggsave(paste(directory_with_data,'plots_MW/vulcano/Bas_',MYGENENAME,'_',Sys.time(),'.pdf',sep=""), width=10, height=6)
-ggsave(paste(directory_with_data,'plots_MW/vulcano/Bas_',MYGENENAME,'_',Sys.time(),'.png',sep=""), width=10, height=6)
+# We concluded it might not be a good strategy to select for expression of the gene of 
+# interest. So these parameter settings might not include all correlated genes that 
+# one can find.
+#correlationResult_stringent = analyseCorrelation(config, groupedSCS, geneName=MYGENENAME, groupName='Combined', removeNoExpressCells = 'goi', percentage=20) # default = 20
+#plotCorrelationVolcano(config, correlationResult=correlationResult_stringent, coefficientCutoff=0.25, pValueCutoff=1/10^5, outputMode='show')
+#p3<-last_plot()
+#p3<-p3+xlim(-1,1)
+#p3
+#ggsave(paste(directory_with_data,'plots_MW/vulcano/Bas_',MYGENENAME,'_',Sys.time(),'.pdf',sep=""), width=10, height=6)
+#ggsave(paste(directory_with_data,'plots_MW/vulcano/Bas_',MYGENENAME,'_',Sys.time(),'.png',sep=""), width=10, height=6)
 
 # ====================================================================================================
 # Method by me to correlate one vs. all

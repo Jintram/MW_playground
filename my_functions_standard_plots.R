@@ -43,15 +43,15 @@ plot_scatter_w_highlighted_clusters_condition<-function(df_toplot,x,y,cluster_as
 }
 
 plot_scatter_w_highlighted_clusters_condition_exprgrad<-function(df_toplot,x,y,cluster_assignments_varname,conditions_varname,condition_names,condition_markers,
-                                                        myxlabel,myylabel,mytitle,col_vector,selected_gene_expression_varname,savelocation) {
+                                                        myxlabel,myylabel,mytitle,col_vector,selected_gene_expression_varname,savelocation,mylimits=NULL) {
   
   TEXTSIZE=15
   
   # The gene expression plot
   p1<-ggplot(data=df_toplot)+
     geom_point(aes_string(x=x,y=y,size=selected_gene_expression_varname,color=selected_gene_expression_varname))+
-    scale_color_gradient(low="white", high="black")+
-    scale_size_continuous(range = c(1, 10))+
+    scale_color_gradient(low="white", high="black",limits=mylimits)+
+    scale_size_continuous(range = c(1, 10))+#mylimits
     theme(
       panel.background = element_rect(fill = "transparent") # bg of the panel
       , plot.background = element_rect(fill = "transparent", color = NA) # bg of the plot
@@ -108,7 +108,7 @@ plot_scatter_w_highlighted_clusters_condition_exprgrad<-function(df_toplot,x,y,c
 }
 
 plot_scatter_gene_expression<-function(df_toplot,x,y,cluster_assignments_varname,conditions_varname,condition_names,condition_markers,
-                                                                 myxlabel,myylabel,mytitle,col_vector,selected_gene_expression_varname) {
+                                                                 myxlabel,myylabel,mytitle,col_vector,selected_gene_expression_varname,mylimits=NULL) {
   
   TEXTSIZE=15
   #colorScheme<-brewer.pal(3,"Spectral")
@@ -121,7 +121,7 @@ plot_scatter_gene_expression<-function(df_toplot,x,y,cluster_assignments_varname
                           ),
                size=2,alpha=0.8)+
     #scale_color_gradientn(colours = c('lightskyblue','red4'))+
-    scale_color_distiller(  palette="Spectral")+
+    scale_color_distiller(palette="Spectral", limits=mylimits)+
     #scale_color_gradient2(low=colorScheme[1], mid=colorScheme[2],  high=colorScheme[3], guide=guide_colorbar(barheight=15))+
     #scale_shape_manual(values=condition_markers,labels=condition_names)+
     ggtitle(mytitle)+

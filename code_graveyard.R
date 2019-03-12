@@ -185,4 +185,15 @@ ggplot(data=selected_data_df_low, mapping=aes(x=n123, y=differential_expression_
 
 
 
+df_test<-data_frame(x=as.numeric(selected_gene_expression))
+mybinwidth=min(df_test$x[df_test$x>0])
+
+ggplot()+
+  geom_histogram(data=df_test,aes(x),binwidth=mybinwidth) # df_test
+lala<-data_frame(x=c(1,2,3,3,3))
+# ==================================================================================================
+
+
+
+
 

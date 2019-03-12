@@ -88,4 +88,17 @@ test_result<-apply(test_matrix,2,myfun,y=c(1,2,3))
 
 
 
+# Heatmap example
+test_matrix=matrix(c(c(1,2,3),c(2,3,4),c(5,5,5)),nrow=3)
+
+ggplot(data=melt(test_matrix), aes(Var1,Var2))+
+  geom_tile(aes(fill = value),colour = "white") + 
+  scale_fill_gradient(low = "white", high = "steelblue")
+
+
+# Heatmap example inet
+m = matrix(rnorm(20),5)
+ggplot(melt(m), aes(Var1,Var2, fill=value)) + geom_raster()
+
+
 
