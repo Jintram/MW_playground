@@ -1,4 +1,6 @@
 
+# Some setup ================================================================================================
+
 # Parameters that come from earlier analysis
 condition_factors # this holds attribution to datasets
 datasetnames # matches above
@@ -7,6 +9,8 @@ shortdatasetnames # matches above
 # these were determined earlier, but can be taken immediately from the data
 cluster_assignments <- as.factor(groupedSCS$Combined@cluster$kpart)
 all_gene_expression <- groupedSCS$Combined@ndata
+all_gene_expression_raw  <- groupedSCS$Combined@expdata
+all_gene_expression_downsampled <- groupedSCS$Combined@fdata
 
 # For convenience, some extra parameters
 tsne_locations      <- groupedSCS$Combined@tsne
@@ -52,10 +56,17 @@ sd_gene_expression_cluster5_wildtype  <- rowSds(as.matrix(gene_expression_cluste
 detectioncount_gene_expression_cluster5_mutant<-rowSums(1*(gene_expression_cluster5_mutant>0.1))
 detectioncount_gene_expression_cluster5_wildtype<-rowSums(1*(gene_expression_cluster5_wildtype>0.1))
 
+# Calculate rescaling factors as done Grun & Van Oudenaarden (no pro'lly stands for normalization)
+no_wildtype <- (median(apply(all_gene_expression_raw[,indices_cluster5_wildtype],2,sum))) / (min(apply(all_gene_expression_raw,2,sum)))
+no_mutant   <- (median(apply(all_gene_expression_raw[,indices_cluster5_mutant],2,sum)))   / (min(apply(all_gene_expression_raw,2,sum)))
+
+
+
 # Now count the differential expression
 differential_gene_expression <- detectioncount_gene_expression_cluster5_mutant/detectioncount_gene_expression_cluster5_wildtype
 
 
+# ==================================================================================================
 
 # XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 # I was editing here, need to calculate std dev, min(counts), and add to bar plot

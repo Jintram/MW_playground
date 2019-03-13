@@ -8,6 +8,7 @@ y     <- object@expdata[,names(object@ndata)]
 
 
 
+
 # Let's see if we can do the normalization manually ===================================================
 overall_median_transcript_count <- median(apply(y,2,sum))
 overall_min_transcript_count <- min(apply(y,2,sum))
