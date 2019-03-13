@@ -102,3 +102,26 @@ ggplot(melt(m), aes(Var1,Var2, fill=value)) + geom_raster()
 
 
 
+
+
+# dividing rows of matrix by a vector (of length equal to #columns)
+testmatrix<-matrix(c(1,1,2,2,3,3),ncol=3)
+sweep(testmatrix,2,c(1,2,3),'/') # note margin here is counter-intuitive (to me)
+
+
+
+
+
+
+# use grepl to search for multiple terms
+# note that also %in% aka match() can be used for this (when search strings match exactly to some entries)
+search_list <- c('A1BG__chr19','A1BG-AS1__chr19')
+search_term <- paste(search_list,collapse="|")
+hit_list    <- which(grepl(search_term,gene_names))
+
+
+
+
+
+
+

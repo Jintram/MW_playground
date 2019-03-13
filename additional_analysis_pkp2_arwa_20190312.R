@@ -72,11 +72,13 @@ barplot_differential_expression(selected_data_df=selected_data_df,centers_varnam
 
 
 
+# ========================================
 
+pkp2_gene_expr_rev <- get_expression_gene(all_gene_expression[,which(dataframe_cells$condition==1)], '^PKP2_')
+pkp2_gene_expr_mut <- get_expression_gene(all_gene_expression[,which(dataframe_cells$condition==2)], '^PKP2_')
 
-
-
-
+mean_pkp2_rev <- mean(as.numeric(pkp2_gene_expr_rev))
+mean_pkp2_mut <- mean(as.numeric(pkp2_gene_expr_mut))
 
 
 
