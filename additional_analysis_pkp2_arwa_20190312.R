@@ -8,9 +8,10 @@ shortdatasetnames # matches above
 
 # these were determined earlier, but can be taken immediately from the data
 cluster_assignments <- as.factor(groupedSCS$Combined@cluster$kpart)
-all_gene_expression <- groupedSCS$Combined@ndata
-all_gene_expression_raw  <- groupedSCS$Combined@expdata
+all_gene_expression             <- groupedSCS$Combined@ndata
+all_gene_expression_raw         <- groupedSCS$Combined@expdata[,names(all_gene_expression)]
 all_gene_expression_downsampled <- groupedSCS$Combined@fdata
+gene_names                      <- rownames(groupedSCS$Combined@ndata)
 
 # For convenience, some extra parameters
 tsne_locations      <- groupedSCS$Combined@tsne
@@ -44,9 +45,11 @@ indices_cluster5_wildtype  <- which(dataframe_cells$cluster==5 & dataframe_cells
 gene_expression_cluster5_mutant    <- all_gene_expression[,indices_cluster5_mutant]
 gene_expression_cluster5_wildtype  <- all_gene_expression[,indices_cluster5_wildtype]
 
-# Calculate mean expression values
-mean_gene_expression_cluster5_mutant    <-rowMeans(as.matrix(gene_expression_cluster5_mutant))
-mean_gene_expression_cluster5_wildtype  <-rowMeans(as.matrix(gene_expression_cluster5_wildtype))
+# Calculate mean and median expression values
+mean_gene_expression_cluster5_mutant    <- rowMeans(as.matrix(gene_expression_cluster5_mutant))
+mean_gene_expression_cluster5_wildtype  <- rowMeans(as.matrix(gene_expression_cluster5_wildtype))
+median_gene_expression_cluster5_mutant    <- rowMedians(as.matrix(gene_expression_cluster5_mutant))
+median_gene_expression_cluster5_wildtype  <- rowMedians(as.matrix(gene_expression_cluster5_wildtype))
 
 # Calculate standard deviations
 sd_gene_expression_cluster5_mutant    <- rowSds(as.matrix(gene_expression_cluster5_mutant))
@@ -57,29 +60,75 @@ detectioncount_gene_expression_cluster5_mutant<-rowSums(1*(gene_expression_clust
 detectioncount_gene_expression_cluster5_wildtype<-rowSums(1*(gene_expression_cluster5_wildtype>0.1))
 
 # Calculate rescaling factors as done Grun & Van Oudenaarden (no pro'lly stands for normalization)
+# IMPORTANT NOTE: this value critically depends on whether "min" or "median" is used for normalization;
+# this is done in the racid code, where ndata is calculated
 no_wildtype <- (median(apply(all_gene_expression_raw[,indices_cluster5_wildtype],2,sum))) / (min(apply(all_gene_expression_raw,2,sum)))
 no_mutant   <- (median(apply(all_gene_expression_raw[,indices_cluster5_mutant],2,sum)))   / (min(apply(all_gene_expression_raw,2,sum)))
 
-
+# Now rescale them accordingly
+median_gene_expression_cluster5_mutant_rescaled   <-
+  no_mutant*median_gene_expression_cluster5_mutant
+median_gene_expression_cluster5_wildtype_rescaled <-
+  no_wildtype*median_gene_expression_cluster5_wildtype
 
 # Now count the differential expression
-differential_gene_expression <- detectioncount_gene_expression_cluster5_mutant/detectioncount_gene_expression_cluster5_wildtype
+differential_gene_expression <- median_gene_expression_cluster5_mutant_rescaled / 
+  median_gene_expression_cluster5_wildtype_rescaled
+    
+# Now calculate standard deviations
+differential_gene_expression_stdev <-
+  differential_gene_expression*
+  sqrt((sd_gene_expression_cluster5_mutant*abs(no_mutant)/detectioncount_gene_expression_cluster5_mutant_rescaled)^2+
+         (sd_gene_expression_cluster5_wildtype*abs(no_wildtype)/detectioncount_gene_expression_cluster5_wildtype_rescaled)^2)
 
+# now calculate p-values
+pv <- binompval(median_gene_expression_cluster5_wildtype_rescaled/sum(median_gene_expression_cluster5_wildtype_rescaled),
+                sum(median_gene_expression_cluster5_mutant_rescaled),median_gene_expression_cluster5_mutant_rescaled)
+
+# create dataframe similar grun & van oudenaarden
+cl5_diff_expr_df <- data.frame(mean.cl5_wildtype=median_gene_expression_cluster5_wildtype_rescaled,mean.cl5_mutant=median_gene_expression_cluster5_mutant_rescaled,
+                fc=differential_gene_expression,
+                fc_inv=1/differential_gene_expression,
+                pv=pv,
+                stdev=differential_gene_expression_stdev,
+                cellcount.cl5_mutant=detectioncount_gene_expression_cluster5_mutant,
+                cellcount.cl5_wildtype=detectioncount_gene_expression_cluster5_wildtype,
+                row.names = gene_names,
+                gene_name = gene_names)
+                #n123original = factor(seq(1,length(differential_gene_expression)))
+cl5_diff_expr_df_filterp05 <- cl5_diff_expr_df[cl5_diff_expr_df$pv<0.01,]
+cl5_diff_expr_df_filterp05 <- cl5_diff_expr_df_filterp05[order(cl5_diff_expr_df_filterp05$fc,decreasing=T),]
+cl5_diff_expr_df_filterp05 <- mutate(cl5_diff_expr_df_filterp05,n123=factor(1:nrow(cl5_diff_expr_df_filterp05)))
 
 # ==================================================================================================
 
-# XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-# I was editing here, need to calculate std dev, min(counts), and add to bar plot
+# Top increased genes
+df_top_selection<-cl5_diff_expr_df_filterp05[1:10,]
+df_top_selection<-mutate(df_top_selection,n321=as.factor(seq(nrow(df_top_selection),1,-1)))
+barplot_differential_expression_v2(df_top_selection,
+                                   differential_expression_varname='fc',
+                                   center_varname='n321',
+                                   gene_name_varname='gene_name',
+                                   lowcol='red',highcol='firebrick4',
+                                   ylabtext='Times higher in mutant',
+                                   mytitle=paste('Differential gene expression cluster 5 mutant vs. wildtype',sep=''))
 
-# 
-barplot_differential_expression(selected_data_df=selected_data_df,centers_varname='n123ro',
-                                differential_expression_varname='differential_expression',
-                                all_gene_names=all_gene_names_race_short,
-                                lowcol='red',highcol='firebrick4',ylabtext='Times higher in cluster',
-                                mytitle=paste('Differential gene expression cluster ',toString(ii),'',sep=''))
+# ##########################################################################################
+# I was editing below!!!
+
+# Top decreased genes
+df_top_decr_selection<-cl5_diff_expr_df_filterp05[nrow(cl5_diff_expr_df_filterp05):(nrow(cl5_diff_expr_df_filterp05)-10),]
+df_top_decr_selection<-mutate(df_top_decr_selection,n123=as.factor(seq(1,nrow(df_top_decr_selection))))
+barplot_differential_expression_v2(df_top_selection,
+                                   differential_expression_varname='fc',
+                                   center_varname='n321',
+                                   gene_name_varname='gene_name',
+                                   lowcol='skyblue',highcol='royalblue4',
+                                   ylabtext='Times lower in mutant',
+                                   mytitle=paste('Differential gene expression cluster 5 mutant vs. wildtype',sep=''))
 
 
-
+# Check by plotting one vs. other (or mean? see below)
 
 
 

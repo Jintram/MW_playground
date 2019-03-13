@@ -62,12 +62,17 @@ ggplot(data=delay) +
 
 
 
-# plotting a bar graph with an inverted sorted axis
+# plotting a bar graph with an inverted sorted axis (and custom labels)
 # Key is that x axis will be sorted, so you have to give your own
 # sorting, using levels of the factor type.
-testdata=data_frame(c=factor(c(1,2,3),levels=c(3,2,1)),y=c(10,4,2))
+testdata=data_frame(c=factor(c(1,2,3),levels=c(3,2,1)),y=c(10,4,2),mylab=c('three','two','one'))
 ggplot(data=testdata, mapping=aes(x=c, y=y))+
-  geom_bar(stat="identity")
+  geom_bar(stat="identity")+
+  scale_x_discrete(breaks=testdata$c,labels=testdata$mylab) # this lines adds custom names
+  # now some notes on naming:
+  # - don't use rownames, some functions (like mutate) forget them; instead, make column with desired names
+  # - make sure that center parameter is a factor, might need to be in reverse to get desired result; also give it its own column
+  # - note that testdata[['mylab']] equals testdata$mylab output, but testdata['mylab'] gives another type (conserves df)
 
 
 

@@ -196,6 +196,32 @@ barplot_differential_expression<-function(selected_data_df,
           plot.title = element_text(size=TEXTSIZE))
 }
 
+barplot_differential_expression_v2<-function(selected_data_df,
+                                          differential_expression_varname,
+                                          center_varname,
+                                          gene_name_varname,
+                                          lowcol,highcol,
+                                          ylabtext, mytitle) {
+  TEXTSIZE=15
+  
+  mybreaks <- selected_data_df[[center_varname]]
+  mylabels <- selected_data_df[[gene_name_varname]]
+  
+  ggplot(data=selected_data_df, mapping=aes_string(x=center_varname, y=differential_expression_varname))+#,fill=dataset_id)) +
+    geom_bar(stat="identity", mapping=aes_string(fill=differential_expression_varname))+
+    scale_x_discrete(breaks=mybreaks,
+                     labels=mylabels)+
+    coord_flip()+
+    xlab("Genes")+
+    ylab(ylabtext)+
+    scale_fill_gradient(low=lowcol, high=highcol)+
+    ggtitle(mytitle)+
+    theme(legend.position="none",
+          text = element_text(size=TEXTSIZE),
+          axis.text = element_text(size=TEXTSIZE),
+          plot.title = element_text(size=TEXTSIZE))
+}
+
 give_better_textsize_plot <- function(TEXTSIZE){
   theme(legend.position="none",
         text = element_text(size=TEXTSIZE),
