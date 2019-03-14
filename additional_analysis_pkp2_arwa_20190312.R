@@ -102,7 +102,7 @@ cl5_diff_expr_df_filterp05 <- mutate(cl5_diff_expr_df_filterp05,n123=factor(1:nr
 
 # ==================================================================================================
 
-# Top increased genes
+# Select and plot top increased genes
 df_top_selection<-cl5_diff_expr_df_filterp05[1:10,]
 df_top_selection<-mutate(df_top_selection,n321=as.factor(seq(nrow(df_top_selection),1,-1)))
 barplot_differential_expression_v2(df_top_selection,
@@ -113,14 +113,15 @@ barplot_differential_expression_v2(df_top_selection,
                                    ylabtext='Times higher in mutant',
                                    mytitle=paste('Differential gene expression cluster 5 mutant vs. wildtype',sep=''))
 
-# ##########################################################################################
-# I was editing below!!!
+# ==================================================================================================
 
-# Top decreased genes
-df_top_decr_selection<-cl5_diff_expr_df_filterp05[nrow(cl5_diff_expr_df_filterp05):(nrow(cl5_diff_expr_df_filterp05)-10),]
-df_top_decr_selection<-mutate(df_top_decr_selection,n123=as.factor(seq(1,nrow(df_top_decr_selection))))
-barplot_differential_expression_v2(df_top_selection,
-                                   differential_expression_varname='fc',
+# Select and plot top decreased genes
+df_top_decr_selection<-cl5_diff_expr_df_filterp05[nrow(cl5_diff_expr_df_filterp05):(nrow(cl5_diff_expr_df_filterp05)-9),]
+df_top_decr_selection<-mutate(df_top_decr_selection,
+                              n123=as.factor(seq(1,nrow(df_top_decr_selection))),
+                              n321=as.factor(seq(nrow(df_top_decr_selection),1,-1)))
+barplot_differential_expression_v2(df_top_decr_selection,
+                                   differential_expression_varname='fc_inv',
                                    center_varname='n321',
                                    gene_name_varname='gene_name',
                                    lowcol='skyblue',highcol='royalblue4',
@@ -130,6 +131,39 @@ barplot_differential_expression_v2(df_top_selection,
 
 # Check by plotting one vs. other (or mean? see below)
 
+# Let's do a sanity check --------------------------------------------------------------------------------
+
+vector_rev_mean<-vector()
+vector_mut_mean<-vector()
+for (gene_name in df_top_selection$gene_name) {
+  
+  expression <- get_expression_gene(all_gene_expression, gene_name)
+  
+  # reverted
+  rev_mean<-mean(as.numeric(expression[which(cluster_assignments==5 & condition_factors==1)]))
+  # mutant
+  mut_mean<-mean(as.numeric(expression[which(cluster_assignments==5 & condition_factors==2)]))
+  
+  vector_rev_mean[length(vector_rev_mean)+1]<-rev_mean
+  vector_mut_mean[length(vector_mut_mean)+1]<-mut_mean
+}
+
+# these two should be consistent (but not equal due to rescaling)
+df_top_selection$mean.cl5_wildtype
+vector_rev_mean
+# these two should be consistent (but not equal due to rescaling)
+df_top_selection$mean.cl5_mutant
+vector_mut_mean
+df_xy_line<-data.frame(x=c(0,max(c(df_scat$ratio1,df_scat$ratio2))),y=c(0,max(c(df_scat$ratio1,df_scat$ratio2))))
+df_scat<-data.frame(x1=df_top_selection$mean.cl5_wildtype,x2=vector_rev_mean,
+                    y1=df_top_selection$mean.cl5_mutant,  y2=vector_mut_mean,
+                    ratio1=df_top_selection$mean.cl5_mutant/df_top_selection$mean.cl5_wildtype,
+                    ratio2=vector_mut_mean/vector_rev_mean)
+ggplot(data=df_scat)+geom_point(aes(x=ratio1,y=ratio2))+
+  xlab('ratio (grun method)')+ylab('ratio (means of normalized data)')+
+  coord_fixed(ratio = 1)+xlim(c(0,max(c(df_scat$ratio1,df_scat$ratio2))))+ylim(c(0,max(c(df_scat$ratio1,df_scat$ratio2))))+
+  geom_line(data=df_xy_line,aes(x=x,y=y))+
+  give_better_textsize_plot(20)
 
 
 # ========================================

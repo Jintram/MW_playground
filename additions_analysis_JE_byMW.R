@@ -1,5 +1,5 @@
 
-# Some initial libraries and config parameters =========================================
+# Load libraries =========================================
 
 require('scales')
 require("RColorBrewer")
@@ -10,6 +10,8 @@ require('gridExtra')
 # My own libraries
 source(paste0("/Users/m.wehrens/Documents/git_repos/MW_playing/","my_functions_standard_analysis.R"))
 source(paste0("/Users/m.wehrens/Documents/git_repos/MW_playing/","my_functions_standard_plots.R"))
+
+# Some config parameters =========================================
 
 # Create wide array of colors
 n <- 60
