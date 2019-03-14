@@ -37,17 +37,22 @@ ggplot(data=dataframe_cells)+
 
 # Now look at cluster 5 specifically ====================================================================
 
+# define sets
 indices_cluster5_mutant    <- which(dataframe_cells$cluster==5 & dataframe_cells$condition==2)
 indices_cluster5_wildtype  <- which(dataframe_cells$cluster==5 & dataframe_cells$condition==1)
 
+# calculate differential expression
 fn_output<-get_differential_gene_expression(indices_cluster5_mutant,indices_cluster5_wildtype,
                                             all_gene_expression,all_gene_expression_raw,
                                             method='min',pcutoff=0.01)
 diff_expr_df<-fn_output[[1]]
 diff_expr_df_filterpv<-fn_output[[2]]
 
+# write to excel files
 write.xlsx(cl5_diff_expr_df, paste0(directory_with_data,'plots_MW/differential_expression_cluster5_wt_vs_mut.xlsx'))
 write.xlsx(diff_expr_df_filterpv, paste0(directory_with_data,'plots_MW/differential_expression_cluster5_wt_vs_mut_selection.xlsx'))
+
+# some additional stats
 
 # ==================================================================================================
 
@@ -147,8 +152,82 @@ pkp2_gene_expr_mut <- get_expression_gene(all_gene_expression[,which(dataframe_c
 mean_pkp2_rev <- mean(as.numeric(pkp2_gene_expr_rev))
 mean_pkp2_mut <- mean(as.numeric(pkp2_gene_expr_mut))
 
+# now check whether my function works correctly by calculating cluster vs. other ===================
 
+cluster_assignments_raceID2 <- as.factor(groupedSCS$Combined@cpart)
 
+# define sets
+indices_cluster5     <- which(cluster_assignments_raceID2==5)
+indices_not_cluster5 <- which(cluster_assignments_raceID2!=5)
 
+# calculate differential expression
+fn_output<-get_differential_gene_expression(indices_cluster5,indices_not_cluster5,
+                                            all_gene_expression,all_gene_expression_raw,
+                                            method='min',pcutoff=0.01)
+diff_expr_df_cl5_vs_ncl5 <-fn_output[[1]]
+diff_expr_df_cl5_vs_ncl5_filterpv<-fn_output[[2]]
 
+df_top_selection<-diff_expr_df_cl5_vs_ncl5_filterpv[1:20,]
+df_top_selection<-mutate(df_top_selection,n321=as.factor(seq(nrow(df_top_selection),1,-1)))
+barplot_differential_expression_v2(df_top_selection,
+                                   differential_expression_varname='fc',
+                                   center_varname='n321',
+                                   gene_name_varname='gene_name',
+                                   lowcol='red',highcol='firebrick4',
+                                   ylabtext='Times higher in mutant',
+                                   mytitle=paste('CALCULATION MW -- differential expr. cluster 5',sep=''))
 
+# using method that i think is buggy ========================================================================
+
+cluster_assignments_raceID2 <- as.factor(groupedSCS$Combined@cpart)
+
+# define sets
+indices_cluster5     <- which(cluster_assignments_raceID2==5)
+indices_not_cluster5 <- which(cluster_assignments_raceID2!=5)
+
+# calculate differential expression
+fn_output<-get_differential_gene_expression(indices_cluster5,indices_not_cluster5,
+                                            all_gene_expression,all_gene_expression_raw,
+                                            method='bug',pcutoff=0.01)
+diff_expr_df_cl5_vs_ncl5 <-fn_output[[1]]
+diff_expr_df_cl5_vs_ncl5_filterpv<-fn_output[[2]]
+
+df_top_selection<-diff_expr_df_cl5_vs_ncl5_filterpv[1:20,]
+df_top_selection<-mutate(df_top_selection,n321=as.factor(seq(nrow(df_top_selection),1,-1)))
+barplot_differential_expression_v2(df_top_selection,
+                                   differential_expression_varname='fc',
+                                   center_varname='n321',
+                                   gene_name_varname='gene_name',
+                                   lowcol='red',highcol='firebrick4',
+                                   ylabtext='Times higher in mutant',
+                                   mytitle=paste('CALCULATION MW (\'bug\')-- differential expr. cluster 5',sep=''))
+
+# using no rescaling ===============
+
+cluster_assignments_raceID2 <- as.factor(groupedSCS$Combined@cpart)
+
+# define sets
+indices_cluster5     <- which(cluster_assignments_raceID2==5)
+indices_not_cluster5 <- which(cluster_assignments_raceID2!=5)
+
+# calculate differential expression
+fn_output<-get_differential_gene_expression(indices_cluster5,indices_not_cluster5,
+                                            all_gene_expression,all_gene_expression_raw,
+                                            method='none',pcutoff=0.01)
+diff_expr_df_cl5_vs_ncl5 <-fn_output[[1]]
+diff_expr_df_cl5_vs_ncl5_filterpv<-fn_output[[2]]
+
+df_top_selection<-diff_expr_df_cl5_vs_ncl5_filterpv[1:20,]
+df_top_selection<-mutate(df_top_selection,n321=as.factor(seq(nrow(df_top_selection),1,-1)))
+barplot_differential_expression_v2(df_top_selection,
+                                   differential_expression_varname='fc',
+                                   center_varname='n321',
+                                   gene_name_varname='gene_name',
+                                   lowcol='red',highcol='firebrick4',
+                                   ylabtext='Times higher in mutant',
+                                   mytitle=paste('CALCULATION MW (\'none\')-- differential expr. cluster 5',sep=''))
+
+# original method =========
+
+diffExp <- clustdiffgenes(groupedSCS$Combined,pvalue=0.01)
+View(diffExp$cl.5)

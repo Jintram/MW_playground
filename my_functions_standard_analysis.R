@@ -79,16 +79,21 @@ get_differential_gene_expression <- function(indices_set1,indices_set2,all_gene_
   # Calculate rescaling factors as done Grun & Van Oudenaarden (no pro'lly stands for normalization)
   # IMPORTANT NOTE: this value critically depends on whether "min" or "median" is used for normalization;
   # this is done in the raceid code, where ndata is calculated
-  no_set1_min <- (median(apply(all_gene_expression_raw[,indices_set1],2,sum))) / (min(apply(all_gene_expression_raw,2,sum)))
-  no_set2_min <- (median(apply(all_gene_expression_raw[,indices_set2],2,sum))) / (min(apply(all_gene_expression_raw,2,sum)))
-  no_set1_med <- (median(apply(all_gene_expression_raw[,indices_set1],2,sum))) / (median(apply(all_gene_expression_raw,2,sum)))
-  no_set2_med <- (median(apply(all_gene_expression_raw[,indices_set2],2,sum))) / (median(apply(all_gene_expression_raw,2,sum)))
-  
+  #
   # chose rescaling factor to continue with
   if (identical(method,'min')) {
-    no_set1<-no_set1_min; no_set2<-no_set2_min
+    no_set1 <- (median(apply(all_gene_expression_raw[,indices_set1],2,sum))) / (min(apply(all_gene_expression_raw,2,sum)))
+    no_set2 <- (median(apply(all_gene_expression_raw[,indices_set2],2,sum))) / (min(apply(all_gene_expression_raw,2,sum)))
   } else if (identical(method,'median')) {
-    no_set1<-no_set1_med; no_set2<-no_set2_med
+    no_set1 <- (median(apply(all_gene_expression_raw[,indices_set1],2,sum))) / (median(apply(all_gene_expression_raw,2,sum)))
+    no_set2 <- (median(apply(all_gene_expression_raw[,indices_set2],2,sum))) / (median(apply(all_gene_expression_raw,2,sum)))
+  } else if (identical(method,'bug')){
+    # Do not use this; I think this method was mistakenly used in original raceID2 code
+    no_set1<-(median(apply(all_gene_expression_raw[,indices_set1],2,sum))) / (min(apply(all_gene_expression_raw+.1,2,sum)))
+    no_set2<-(median(apply(all_gene_expression_raw[,indices_set2],2,sum))) / (min(apply(all_gene_expression_raw+.1,2,sum)))
+  } else if (identical(method,'none')) {
+    no_set1<-1
+    no_set2<-1
   } else {
     stop('Invalid method supplied.')
   }
