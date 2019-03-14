@@ -7,7 +7,8 @@ datasetnames # matches above
 shortdatasetnames # matches above
 
 # these were determined earlier, but can be taken immediately from the data
-cluster_assignments <- as.factor(groupedSCS$Combined@cluster$kpart)
+cluster_assignments             <- as.factor(groupedSCS$Combined@cluster$kpart)
+cluster_assignments_raceID2     <- as.factor(groupedSCS$Combined@cpart)
 all_gene_expression             <- groupedSCS$Combined@ndata
 all_gene_expression_raw         <- groupedSCS$Combined@expdata[,names(all_gene_expression)]
 all_gene_expression_downsampled <- groupedSCS$Combined@fdata
@@ -154,8 +155,6 @@ mean_pkp2_mut <- mean(as.numeric(pkp2_gene_expr_mut))
 
 # now check whether my function works correctly by calculating cluster vs. other ===================
 
-cluster_assignments_raceID2 <- as.factor(groupedSCS$Combined@cpart)
-
 # define sets
 indices_cluster5     <- which(cluster_assignments_raceID2==5)
 indices_not_cluster5 <- which(cluster_assignments_raceID2!=5)
@@ -203,8 +202,6 @@ barplot_differential_expression_v2(df_top_selection,
                                    mytitle=paste('CALCULATION MW (\'bug\')-- differential expr. cluster 5',sep=''))
 
 # using no rescaling ===============
-
-cluster_assignments_raceID2 <- as.factor(groupedSCS$Combined@cpart)
 
 # define sets
 indices_cluster5     <- which(cluster_assignments_raceID2==5)
