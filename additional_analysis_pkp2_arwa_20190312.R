@@ -101,16 +101,17 @@ cl5_diff_expr_df <- data.frame(mean.cl5_wildtype=mean_gene_expression_cluster5_w
                 gene_name = gene_names,
                 stringsAsFactors = FALSE)
                 #n123original = factor(seq(1,length(differential_gene_expression)))
-cl5_diff_expr_df_filterp05 <- cl5_diff_expr_df[cl5_diff_expr_df$pv<0.01,]
-cl5_diff_expr_df_filterp05 <- cl5_diff_expr_df_filterp05[order(cl5_diff_expr_df_filterp05$fc,decreasing=T),]
-cl5_diff_expr_df_filterp05 <- mutate(cl5_diff_expr_df_filterp05,n123=factor(1:nrow(cl5_diff_expr_df_filterp05)))
+cl5_diff_expr_df_filterp01 <- cl5_diff_expr_df[cl5_diff_expr_df$pv<0.01,]
+cl5_diff_expr_df_filterp01 <- cl5_diff_expr_df_filterp01[order(cl5_diff_expr_df_filterp01$fc,decreasing=T),]
+cl5_diff_expr_df_filterp01 <- mutate(cl5_diff_expr_df_filterp01,n123=factor(1:nrow(cl5_diff_expr_df_filterp01)))
 
 write.xlsx(cl5_diff_expr_df, paste0(directory_with_data,'plots_MW/differential_expression_cluster5_wt_vs_mut.xlsx'))
+write.xlsx(cl5_diff_expr_df_filterp01, paste0(directory_with_data,'plots_MW/differential_expression_cluster5_wt_vs_mut_selection.xlsx'))
 
 # ==================================================================================================
 
 # Select and plot top increased genes
-df_top_selection<-cl5_diff_expr_df_filterp05[1:10,]
+df_top_selection<-cl5_diff_expr_df_filterp01[1:10,]
 df_top_selection<-mutate(df_top_selection,n321=as.factor(seq(nrow(df_top_selection),1,-1)))
 barplot_differential_expression_v2(df_top_selection,
                                    differential_expression_varname='fc',
@@ -123,7 +124,7 @@ barplot_differential_expression_v2(df_top_selection,
 # ==================================================================================================
 
 # Select and plot top decreased genes
-df_top_decr_selection<-cl5_diff_expr_df_filterp05[nrow(cl5_diff_expr_df_filterp05):(nrow(cl5_diff_expr_df_filterp05)-9),]
+df_top_decr_selection<-cl5_diff_expr_df_filterp01[nrow(cl5_diff_expr_df_filterp01):(nrow(cl5_diff_expr_df_filterp01)-9),]
 df_top_decr_selection<-mutate(df_top_decr_selection,
                               n123=as.factor(seq(1,nrow(df_top_decr_selection))),
                               n321=as.factor(seq(nrow(df_top_decr_selection),1,-1)))
