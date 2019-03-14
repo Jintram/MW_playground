@@ -64,16 +64,20 @@ detectioncount_gene_expression_cluster5_wildtype<-rowSums(1*(gene_expression_clu
 # this is done in the racid code, where ndata is calculated
 no_wildtype <- (median(apply(all_gene_expression_raw[,indices_cluster5_wildtype],2,sum))) / (min(apply(all_gene_expression_raw,2,sum)))
 no_mutant   <- (median(apply(all_gene_expression_raw[,indices_cluster5_mutant],2,sum)))   / (min(apply(all_gene_expression_raw,2,sum)))
+ratio_rescaling_factors <- no_wildtype/no_mutant
+no_wildtype_med <- (median(apply(all_gene_expression_raw[,indices_cluster5_wildtype],2,sum))) / (median(apply(all_gene_expression_raw,2,sum)))
+no_mutant_med   <- (median(apply(all_gene_expression_raw[,indices_cluster5_mutant],2,sum)))   / (median(apply(all_gene_expression_raw,2,sum)))
+ratio_rescaling_factors_med <- no_wildtype_med/no_mutant_med
 
 # Now rescale them accordingly
-median_gene_expression_cluster5_mutant_rescaled   <-
-  no_mutant*median_gene_expression_cluster5_mutant
-median_gene_expression_cluster5_wildtype_rescaled <-
-  no_wildtype*median_gene_expression_cluster5_wildtype
+mean_gene_expression_cluster5_mutant_rescaled   <-
+  no_mutant*mean_gene_expression_cluster5_mutant
+mean_gene_expression_cluster5_wildtype_rescaled <-
+  no_wildtype*mean_gene_expression_cluster5_wildtype
 
 # Now count the differential expression
-differential_gene_expression <- median_gene_expression_cluster5_mutant_rescaled / 
-  median_gene_expression_cluster5_wildtype_rescaled
+differential_gene_expression <- mean_gene_expression_cluster5_mutant_rescaled / 
+  mean_gene_expression_cluster5_wildtype_rescaled
     
 # Now calculate standard deviations
 differential_gene_expression_stdev <-
@@ -82,11 +86,11 @@ differential_gene_expression_stdev <-
          (sd_gene_expression_cluster5_wildtype*abs(no_wildtype)/detectioncount_gene_expression_cluster5_wildtype_rescaled)^2)
 
 # now calculate p-values
-pv <- binompval(median_gene_expression_cluster5_wildtype_rescaled/sum(median_gene_expression_cluster5_wildtype_rescaled),
-                sum(median_gene_expression_cluster5_mutant_rescaled),median_gene_expression_cluster5_mutant_rescaled)
+pv <- binompval(mean_gene_expression_cluster5_wildtype_rescaled/sum(mean_gene_expression_cluster5_wildtype_rescaled),
+                sum(mean_gene_expression_cluster5_mutant_rescaled),mean_gene_expression_cluster5_mutant_rescaled)
 
 # create dataframe similar grun & van oudenaarden
-cl5_diff_expr_df <- data.frame(mean.cl5_wildtype=median_gene_expression_cluster5_wildtype_rescaled,mean.cl5_mutant=median_gene_expression_cluster5_mutant_rescaled,
+cl5_diff_expr_df <- data.frame(mean.cl5_wildtype=mean_gene_expression_cluster5_wildtype_rescaled,mean.cl5_mutant=mean_gene_expression_cluster5_mutant_rescaled,
                 fc=differential_gene_expression,
                 fc_inv=1/differential_gene_expression,
                 pv=pv,
@@ -94,11 +98,14 @@ cl5_diff_expr_df <- data.frame(mean.cl5_wildtype=median_gene_expression_cluster5
                 cellcount.cl5_mutant=detectioncount_gene_expression_cluster5_mutant,
                 cellcount.cl5_wildtype=detectioncount_gene_expression_cluster5_wildtype,
                 row.names = gene_names,
-                gene_name = gene_names)
+                gene_name = gene_names,
+                stringsAsFactors = FALSE)
                 #n123original = factor(seq(1,length(differential_gene_expression)))
 cl5_diff_expr_df_filterp05 <- cl5_diff_expr_df[cl5_diff_expr_df$pv<0.01,]
 cl5_diff_expr_df_filterp05 <- cl5_diff_expr_df_filterp05[order(cl5_diff_expr_df_filterp05$fc,decreasing=T),]
 cl5_diff_expr_df_filterp05 <- mutate(cl5_diff_expr_df_filterp05,n123=factor(1:nrow(cl5_diff_expr_df_filterp05)))
+
+write.xlsx(cl5_diff_expr_df, paste0(directory_with_data,'plots_MW/differential_expression_cluster5_wt_vs_mut.xlsx'))
 
 # ==================================================================================================
 
@@ -135,7 +142,7 @@ barplot_differential_expression_v2(df_top_decr_selection,
 
 vector_rev_mean<-vector()
 vector_mut_mean<-vector()
-for (gene_name in df_top_selection$gene_name) {
+for (gene_name in c(df_top_selection$gene_name,df_top_decr_selection$gene_name)) {
   
   expression <- get_expression_gene(all_gene_expression, gene_name)
   
@@ -148,6 +155,14 @@ for (gene_name in df_top_selection$gene_name) {
   vector_mut_mean[length(vector_mut_mean)+1]<-mut_mean
 }
 
+# now calculate raw means for all data (and allow comparison with resacaled fc)
+df_all_fc<-data.frame(fc_raw=mean_gene_expression_cluster5_mutant/mean_gene_expression_cluster5_wildtype,
+                          fc_rescaled=cl5_diff_expr_df$fc)
+df_sel_pv_fc<-df_all_fc[cl5_diff_expr_df$pv<0.01,]
+
+rescale_plot_lims_by <- max(ratio_rescaling_factors,1/ratio_rescaling_factors)
+print(paste0('ratio_rescaling_factors = ',toString(ratio_rescaling_factors)))
+
 # these two should be consistent (but not equal due to rescaling)
 df_top_selection$mean.cl5_wildtype
 vector_rev_mean
@@ -155,15 +170,31 @@ vector_rev_mean
 df_top_selection$mean.cl5_mutant
 vector_mut_mean
 df_xy_line<-data.frame(x=c(0,max(c(df_scat$ratio1,df_scat$ratio2))),y=c(0,max(c(df_scat$ratio1,df_scat$ratio2))))
-df_scat<-data.frame(x1=df_top_selection$mean.cl5_wildtype,x2=vector_rev_mean,
-                    y1=df_top_selection$mean.cl5_mutant,  y2=vector_mut_mean,
-                    ratio1=df_top_selection$mean.cl5_mutant/df_top_selection$mean.cl5_wildtype,
+joined_mut<-c(df_top_selection$mean.cl5_mutant,df_top_decr_selection$mean.cl5_mutant)
+joined_wt <-c(df_top_selection$mean.cl5_wildtype,df_top_decr_selection$mean.cl5_wildtype)
+df_scat<-data.frame(x1=joined_wt,
+                    x2=vector_rev_mean,
+                    y1=joined_mut,  
+                    y2=vector_mut_mean,
+                    ratio1=joined_mut/joined_wt,
                     ratio2=vector_mut_mean/vector_rev_mean)
-ggplot(data=df_scat)+geom_point(aes(x=ratio1,y=ratio2))+
+ggplot(data=df_scat)+
+  geom_line(data=df_xy_line,aes(x=x,y=y*ratio_rescaling_factors))+
+  geom_line(data=df_xy_line,aes(x=-x,y=-y/ratio_rescaling_factors))+
+  geom_point(data=df_all_fc,aes(x=fc_rescaled,y=fc_raw),color='grey',shape=4)+
+  geom_point(data=df_all_fc,aes(x=-1/fc_rescaled,y=-1/fc_raw),color='grey',shape=4)+
+  geom_point(data=df_sel_pv_fc,aes(x=fc_rescaled,y=fc_raw),color='grey')+
+  geom_point(data=df_sel_pv_fc,aes(x=-1/fc_rescaled,y=-1/fc_raw),color='grey')+
+  geom_point(aes(x=ratio1,y=ratio2),color='purple')+
+  geom_point(aes(x=-1/ratio1,y=-1/ratio2),color='orange')+
   xlab('ratio (grun method)')+ylab('ratio (means of normalized data)')+
-  coord_fixed(ratio = 1)+xlim(c(0,max(c(df_scat$ratio1,df_scat$ratio2))))+ylim(c(0,max(c(df_scat$ratio1,df_scat$ratio2))))+
+  coord_fixed(ratio = 1)+
+  xlim(c(-rescale_plot_lims_by*max(c(df_scat$ratio1,df_scat$ratio2)),rescale_plot_lims_by*max(c(df_scat$ratio1,df_scat$ratio2))))+
+  ylim(c(-rescale_plot_lims_by*max(c(df_scat$ratio1,df_scat$ratio2)),rescale_plot_lims_by*max(c(df_scat$ratio1,df_scat$ratio2))))+
   geom_line(data=df_xy_line,aes(x=x,y=y))+
+  geom_line(data=df_xy_line,aes(x=-x,y=-y))+
   give_better_textsize_plot(20)
+
 
 
 # ========================================
