@@ -82,8 +82,8 @@ differential_gene_expression <- mean_gene_expression_cluster5_mutant_rescaled /
 # Now calculate standard deviations
 differential_gene_expression_stdev <-
   differential_gene_expression*
-  sqrt((sd_gene_expression_cluster5_mutant*abs(no_mutant)/detectioncount_gene_expression_cluster5_mutant_rescaled)^2+
-         (sd_gene_expression_cluster5_wildtype*abs(no_wildtype)/detectioncount_gene_expression_cluster5_wildtype_rescaled)^2)
+  sqrt((sd_gene_expression_cluster5_mutant*abs(no_mutant)/mean_gene_expression_cluster5_mutant_rescaled)^2+
+       (sd_gene_expression_cluster5_wildtype*abs(no_wildtype)/mean_gene_expression_cluster5_wildtype_rescaled)^2)
 
 # now calculate p-values
 pv <- binompval(mean_gene_expression_cluster5_wildtype_rescaled/sum(mean_gene_expression_cluster5_wildtype_rescaled),
@@ -105,13 +105,24 @@ cl5_diff_expr_df_filterp01 <- cl5_diff_expr_df[cl5_diff_expr_df$pv<0.01,]
 cl5_diff_expr_df_filterp01 <- cl5_diff_expr_df_filterp01[order(cl5_diff_expr_df_filterp01$fc,decreasing=T),]
 cl5_diff_expr_df_filterp01 <- mutate(cl5_diff_expr_df_filterp01,n123=factor(1:nrow(cl5_diff_expr_df_filterp01)))
 
+# ==============================================================================================================
+
+indices_cluster5_mutant    <- which(dataframe_cells$cluster==5 & dataframe_cells$condition==2)
+indices_cluster5_wildtype  <- which(dataframe_cells$cluster==5 & dataframe_cells$condition==1)
+
+fn_output<-get_differential_gene_expression(indices_cluster5_mutant,indices_cluster5_wildtype,
+                                            all_gene_expression,all_gene_expression_raw,
+                                            method='min',pcutoff=0.01)
+diff_expr_df<-fn_output[[1]]
+diff_expr_df_filterpv<-fn_output[[2]]
+
 write.xlsx(cl5_diff_expr_df, paste0(directory_with_data,'plots_MW/differential_expression_cluster5_wt_vs_mut.xlsx'))
-write.xlsx(cl5_diff_expr_df_filterp01, paste0(directory_with_data,'plots_MW/differential_expression_cluster5_wt_vs_mut_selection.xlsx'))
+write.xlsx(diff_expr_df_filterpv, paste0(directory_with_data,'plots_MW/differential_expression_cluster5_wt_vs_mut_selection.xlsx'))
 
 # ==================================================================================================
 
 # Select and plot top increased genes
-df_top_selection<-cl5_diff_expr_df_filterp01[1:10,]
+df_top_selection<-diff_expr_df_filterpv[1:10,]
 df_top_selection<-mutate(df_top_selection,n321=as.factor(seq(nrow(df_top_selection),1,-1)))
 barplot_differential_expression_v2(df_top_selection,
                                    differential_expression_varname='fc',
@@ -124,7 +135,7 @@ barplot_differential_expression_v2(df_top_selection,
 # ==================================================================================================
 
 # Select and plot top decreased genes
-df_top_decr_selection<-cl5_diff_expr_df_filterp01[nrow(cl5_diff_expr_df_filterp01):(nrow(cl5_diff_expr_df_filterp01)-9),]
+df_top_decr_selection<-diff_expr_df_filterpv[nrow(diff_expr_df_filterpv):(nrow(diff_expr_df_filterpv)-9),]
 df_top_decr_selection<-mutate(df_top_decr_selection,
                               n123=as.factor(seq(1,nrow(df_top_decr_selection))),
                               n321=as.factor(seq(nrow(df_top_decr_selection),1,-1)))
