@@ -119,3 +119,90 @@ barplot_differential_expression_v2(df_top_decr_selection,
 
 
 
+
+
+
+
+
+
+
+# Now cross-reference DESeq w/ previous results ==========================================================
+
+# Run DESeq on cluster 5 vs. non cluster 5 ===============================================================
+
+# wild type, cluster 5
+indices_set1 <- which(dataframe_cells$cluster==5)
+# mutant, cluster 5
+indices_set2 <- which(dataframe_cells$cluster!=5) 
+
+# combine data
+df_set1_and_set2 <- all_gene_expression[,c(indices_set1, indices_set2)]
+
+# determine condition
+mycondition <-factor(c(rep(1,length(indices_set1)),rep(2,length(indices_set2))))
+# colnames
+mycolnames  <- colnames(df_set1_and_set2)
+# libType
+my_libType  <- rep("single-end", dim(df_set1_and_set2)[2])
+
+# run on sc@expdata
+des <- data.frame( row.names = mycolnames, 
+                   condition = mycondition, 
+                   libType = my_libType)
+
+
+cds <- DESeqDataSetFromMatrix(countData=round(df_set1_and_set2,0),colData=des,design =~ condition)#,...) 
+# note: dominique rounds the data
+cds <- DESeq(cds,fitType='local')
+res <- results(cds)
+
+
+# Re-do previous analysis -- use cluster 5 vs. not cluster 5 ===========================================
+
+# define sets
+indices_set1    <- which(dataframe_cells$cluster==5)# & dataframe_cells$condition==2)
+indices_set2  <- which(dataframe_cells$cluster!=5)# & dataframe_cells$condition==1)
+# calculate differential expression
+fn_output<-get_differential_gene_expression(indices_set1,indices_set2,
+                                            all_gene_expression,all_gene_expression_raw,
+                                            method='min',pcutoff=0.01)
+df_fc_cluster5_mw_method<-fn_output[[1]]
+
+# Now compare ===========================================================================================
+
+# now create params to use for comparison 
+fc_mw    <- df_fc_cluster5_mw_method$fc
+pv_mw    <- df_fc_cluster5_mw_method$pv
+fc_deseq <- 2^df_res$log2FoldChange
+pv_deseq <- df_res$pvalue
+# combined pv
+pv_color <- (pv_mw<0.01)*0.5+(pv_deseq<0.01)*0.5
+
+# create dataframe for scatter plot
+xyline=data.frame(x=seq(0,10,1),y=seq(0,10,1))
+df_scatter=data.frame(fc_mw=fc_mw,fc_deseq=fc_deseq,pv_color=pv_color)
+# plot
+ggplot(data=df_scatter)+
+  geom_point(aes(x=fc_mw,y=fc_deseq,color=pv_color))+
+  scale_colour_gradientn(colors=c('red','orange','green'))+
+  coord_fixed(ratio = 1)+
+  geom_line(data=xyline,aes(x=x,y=y))+
+  give_better_textsize_plot(20)+
+  xlab('Martijn calculation')+ylab('DESeq calculation')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
