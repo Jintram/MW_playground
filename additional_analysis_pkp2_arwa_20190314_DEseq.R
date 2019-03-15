@@ -124,7 +124,9 @@ barplot_differential_expression_v2(df_top_decr_selection,
 
 
 
-
+################################################################################################
+# FINISH RUNNING ANALYSIS BELOW -- DESeq takes ages so needs to run for longer.
+################################################################################################
 
 # Now cross-reference DESeq w/ previous results ==========================================================
 
@@ -160,13 +162,17 @@ res <- results(cds)
 # Re-do previous analysis -- use cluster 5 vs. not cluster 5 ===========================================
 
 # define sets
-indices_set1    <- which(dataframe_cells$cluster==5)# & dataframe_cells$condition==2)
-indices_set2  <- which(dataframe_cells$cluster!=5)# & dataframe_cells$condition==1)
+indices_set1 <- which(dataframe_cells$cluster==5)# & dataframe_cells$condition==2)
+indices_set2 <- which(dataframe_cells$cluster!=5)# & dataframe_cells$condition==1)
 # calculate differential expression
 fn_output<-get_differential_gene_expression(indices_set1,indices_set2,
                                             all_gene_expression,all_gene_expression_raw,
                                             method='min',pcutoff=0.01)
 df_fc_cluster5_mw_method<-fn_output[[1]]
+
+# Also look at built-in RaceID2 results =================================================================
+
+diffExp <- clustdiffgenes(groupedSCS$Combined,pvalue=0.01)
 
 # Now compare ===========================================================================================
 
