@@ -15,6 +15,9 @@ gene_expression_set2  <- all_gene_expression_raw[,indices_set2]
 
 # Define experimental design (required DEseq input) =========================================================
 
+dds <- DESeq
+
+
 # Actually perform the analysis ==============================================================================
 dds<-DESeq(dds)
 results<-results(dds)

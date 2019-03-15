@@ -38,6 +38,8 @@ no_corrected  <- (median(apply(y[,part == 1],2,sum))) / (median(apply(x0[,part =
 no_prime          <- (median(apply(y[,part == 1],2,sum))) / (median(apply(y,2,sum)))
 no_prime_min      <- (median(apply(y[,part == 1],2,sum))) / (min(apply(y,2,sum)))
 
+no_prime_try      <- (median(apply(y[,part == 1],2,sum))) / (min(apply(y+.1,2,sum)))
+
 
 
 

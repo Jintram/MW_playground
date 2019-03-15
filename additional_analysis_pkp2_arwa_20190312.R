@@ -19,7 +19,8 @@ tsne_locations      <- groupedSCS$Combined@tsne
 
 # re-build earlier dataframe
 dataframe_cells <- data_frame(V1=tsne_locations[,1],V2=tsne_locations[,2],
-                              cluster=cluster_assignments,condition=condition_factors)
+                              cluster=cluster_assignments,condition=condition_factors,
+                              cluster_raceID2=cluster_assignments_raceID2)
 
 # Make some plots to re-assure ourselves ====================================================================
 
@@ -50,7 +51,7 @@ diff_expr_df<-fn_output[[1]]
 diff_expr_df_filterpv<-fn_output[[2]]
 
 # write to excel files
-write.xlsx(cl5_diff_expr_df, paste0(directory_with_data,'plots_MW/differential_expression_cluster5_wt_vs_mut.xlsx'))
+write.xlsx(diff_expr_df, paste0(directory_with_data,'plots_MW/differential_expression_cluster5_wt_vs_mut.xlsx'))
 write.xlsx(diff_expr_df_filterpv, paste0(directory_with_data,'plots_MW/differential_expression_cluster5_wt_vs_mut_selection.xlsx'))
 
 # some additional stats
@@ -228,3 +229,199 @@ barplot_differential_expression_v2(df_top_selection,
 
 diffExp <- clustdiffgenes(groupedSCS$Combined,pvalue=0.01)
 View(diffExp$cl.5)
+
+
+
+
+
+
+
+
+
+
+
+# =================================================================================================================
+# =================================================================================================================
+# Code below is rather repetitive and repeats analyses for specific situations
+# =================================================================================================================
+# =================================================================================================================
+
+
+
+# Repeat for cluster 4 vs. cluster 5 ==========
+
+# Re-assure ourselves we're looking at the right stuff
+ggplot(data=dataframe_cells)+
+  geom_point(aes(x=V1,y=V2,shape=condition),color='grey')+
+  geom_point(data=dataframe_cells[dataframe_cells$cluster==5&dataframe_cells$condition==2,],aes(x=V1,y=V2,shape=condition),color='orange')+
+  geom_point(data=dataframe_cells[dataframe_cells$cluster==4&dataframe_cells$condition==2,],aes(x=V1,y=V2,shape=condition),color='red')+
+  ggtitle('Gene expression space')+
+  give_better_textsize_plot(20)
+
+# Perform differential gene expression analysis ====================================================================
+
+# define sets
+indices_cluster4_mutant <- which(dataframe_cells$cluster==4 & dataframe_cells$condition==2)
+indices_cluster5_mutant <- which(dataframe_cells$cluster==5 & dataframe_cells$condition==2)
+
+# calculate differential expression
+fn_output<-get_differential_gene_expression(indices_cluster4_mutant,indices_cluster5_mutant,
+                                            all_gene_expression,all_gene_expression_raw,
+                                            method='min',pcutoff=0.01)
+diff_expr_df<-fn_output[[1]]
+diff_expr_df_filterpv<-fn_output[[2]]
+
+# write to excel files
+write.xlsx(diff_expr_df, paste0(directory_with_data,'plots_MW/differential_expression_cluster_mut4vs5.xlsx'))
+write.xlsx(diff_expr_df_filterpv, paste0(directory_with_data,'plots_MW/differential_expression_cluster_mut4vs5_selection.xlsx'))
+
+# Plot 1
+
+# Select and plot top increased genes
+df_top_selection<-diff_expr_df_filterpv[1:10,]
+df_top_selection<-mutate(df_top_selection,n321=as.factor(seq(nrow(df_top_selection),1,-1)))
+barplot_differential_expression_v2(df_top_selection,
+                                   differential_expression_varname='fc',
+                                   center_varname='n321',
+                                   gene_name_varname='gene_name',
+                                   lowcol='red',highcol='firebrick4',
+                                   ylabtext='Times higher in cluster 4',
+                                   mytitle=paste('Differential gene expression (cluster 4 vs 5)',sep=''))
+
+# Plot 2
+
+# Select and plot top decreased genes
+df_top_decr_selection<-diff_expr_df_filterpv[nrow(diff_expr_df_filterpv):(nrow(diff_expr_df_filterpv)-9),]
+df_top_decr_selection<-mutate(df_top_decr_selection,
+                              n123=as.factor(seq(1,nrow(df_top_decr_selection))),
+                              n321=as.factor(seq(nrow(df_top_decr_selection),1,-1)))
+barplot_differential_expression_v2(df_top_decr_selection,
+                                   differential_expression_varname='fc_inv',
+                                   center_varname='n321',
+                                   gene_name_varname='gene_name',
+                                   lowcol='skyblue',highcol='royalblue4',
+                                   ylabtext='Times lower in cluster 4',
+                                   mytitle=paste('Differential gene expression (cluster 4 vs 5)',sep=''))
+
+
+
+
+
+
+
+
+
+# Repeat for cluster 7 vs. cluster 4 ==========
+
+# Re-assure ourselves we're looking at the right stuff
+ggplot(data=dataframe_cells)+
+  geom_point(aes(x=V1,y=V2,shape=condition),color='grey')+
+  geom_point(data=dataframe_cells[dataframe_cells$cluster==4&dataframe_cells$condition==2,],aes(x=V1,y=V2,shape=condition),color='orange')+
+  geom_point(data=dataframe_cells[dataframe_cells$cluster==7&dataframe_cells$condition==2,],aes(x=V1,y=V2,shape=condition),color='red')+
+  ggtitle('Gene expression space')+
+  give_better_textsize_plot(20)
+
+# Perform differential gene expression analysis ====================================================================
+
+# define sets
+indices_set1 <- which(dataframe_cells$cluster==7 & dataframe_cells$condition==2)
+indices_set2 <- which(dataframe_cells$cluster==4 & dataframe_cells$condition==2)
+
+# calculate differential expression
+fn_output<-get_differential_gene_expression(indices_set1,indices_set2,
+                                            all_gene_expression,all_gene_expression_raw,
+                                            method='min',pcutoff=0.01)
+diff_expr_df<-fn_output[[1]]
+diff_expr_df_filterpv<-fn_output[[2]]
+
+# write to excel files
+write.xlsx(diff_expr_df, paste0(directory_with_data,'plots_MW/differential_expression_cluster_mut7vs4.xlsx'))
+write.xlsx(diff_expr_df_filterpv, paste0(directory_with_data,'plots_MW/differential_expression_cluster_mut7vs4_selection.xlsx'))
+
+# Plot 1
+
+# Select and plot top increased genes
+df_top_selection<-diff_expr_df_filterpv[1:10,]
+df_top_selection<-mutate(df_top_selection,n321=as.factor(seq(nrow(df_top_selection),1,-1)))
+barplot_differential_expression_v2(df_top_selection,
+                                   differential_expression_varname='fc',
+                                   center_varname='n321',
+                                   gene_name_varname='gene_name',
+                                   lowcol='red',highcol='firebrick4',
+                                   ylabtext='Times higher in cluster 7',
+                                   mytitle=paste('Differential gene expression (cluster 7 vs 4)',sep=''))
+
+# Plot 2
+
+# Select and plot top decreased genes
+df_top_decr_selection<-diff_expr_df_filterpv[nrow(diff_expr_df_filterpv):(nrow(diff_expr_df_filterpv)-9),]
+df_top_decr_selection<-mutate(df_top_decr_selection,
+                              n123=as.factor(seq(1,nrow(df_top_decr_selection))),
+                              n321=as.factor(seq(nrow(df_top_decr_selection),1,-1)))
+barplot_differential_expression_v2(df_top_decr_selection,
+                                   differential_expression_varname='fc_inv',
+                                   center_varname='n321',
+                                   gene_name_varname='gene_name',
+                                   lowcol='skyblue',highcol='royalblue4',
+                                   ylabtext='Times lower in cluster 7',
+                                   mytitle=paste('Differential gene expression (cluster 7 vs 4)',sep=''))
+
+
+
+
+
+# Repeat for cluster 6 vs. cluster 7 ==========
+
+# Re-assure ourselves we're looking at the right stuff
+ggplot(data=dataframe_cells)+
+  geom_point(aes(x=V1,y=V2,shape=condition),color='grey')+
+  geom_point(data=dataframe_cells[dataframe_cells$cluster==7&dataframe_cells$condition==2,],aes(x=V1,y=V2,shape=condition),color='orange')+
+  geom_point(data=dataframe_cells[dataframe_cells$cluster==6&dataframe_cells$condition==2,],aes(x=V1,y=V2,shape=condition),color='red')+
+  ggtitle('Gene expression space')+
+  give_better_textsize_plot(20)
+
+# Perform differential gene expression analysis ====================================================================
+
+# define sets
+indices_set1 <- which(dataframe_cells$cluster==6 & dataframe_cells$condition==2)
+indices_set2 <- which(dataframe_cells$cluster==7 & dataframe_cells$condition==2)
+
+# calculate differential expression
+fn_output<-get_differential_gene_expression(indices_set1,indices_set2,
+                                            all_gene_expression,all_gene_expression_raw,
+                                            method='min',pcutoff=0.01)
+diff_expr_df<-fn_output[[1]]
+diff_expr_df_filterpv<-fn_output[[2]]
+
+# write to excel files
+write.xlsx(diff_expr_df, paste0(directory_with_data,'plots_MW/differential_expression_cluster_mut6vs7.xlsx'))
+write.xlsx(diff_expr_df_filterpv, paste0(directory_with_data,'plots_MW/differential_expression_cluster_mut6vs7_selection.xlsx'))
+
+# Plot 1
+
+# Select and plot top increased genes
+df_top_selection<-diff_expr_df_filterpv[1:10,]
+df_top_selection<-mutate(df_top_selection,n321=as.factor(seq(nrow(df_top_selection),1,-1)))
+barplot_differential_expression_v2(df_top_selection,
+                                   differential_expression_varname='fc',
+                                   center_varname='n321',
+                                   gene_name_varname='gene_name',
+                                   lowcol='red',highcol='firebrick4',
+                                   ylabtext='Times higher in cluster 6',
+                                   mytitle=paste('Differential gene expression (cluster 6 vs 7)',sep=''))
+
+# Plot 2
+
+# Select and plot top decreased genes
+df_top_decr_selection<-diff_expr_df_filterpv[nrow(diff_expr_df_filterpv):(nrow(diff_expr_df_filterpv)-9),]
+df_top_decr_selection<-mutate(df_top_decr_selection,
+                              n123=as.factor(seq(1,nrow(df_top_decr_selection))),
+                              n321=as.factor(seq(nrow(df_top_decr_selection),1,-1)))
+barplot_differential_expression_v2(df_top_decr_selection,
+                                   differential_expression_varname='fc_inv',
+                                   center_varname='n321',
+                                   gene_name_varname='gene_name',
+                                   lowcol='skyblue',highcol='royalblue4',
+                                   ylabtext='Times lower in cluster 6',
+                                   mytitle=paste('Differential gene expression (cluster 6 vs 7)',sep=''))
+

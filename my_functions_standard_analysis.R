@@ -97,7 +97,7 @@ get_differential_gene_expression <- function(indices_set1,indices_set2,all_gene_
   } else {
     stop('Invalid method supplied.')
   }
-  ratio_rescaling_factors <- no_set2/no_set1 # interesting to see whole-set expression difference
+  ratio_rescaling_factors <- no_set1/no_set2 # interesting to see whole-set expression difference (not used)
   
   # Now rescale them accordingly
   mean_gene_expression_set1_rescaled <- no_set1*mean_gene_expression_set1
