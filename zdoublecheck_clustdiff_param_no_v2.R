@@ -45,3 +45,44 @@ no_prime_try      <- (median(apply(y[,part == 1],2,sum))) / (min(apply(y+.1,2,su
 
 
 
+
+
+# ==========================================================================================
+# Let's just test whether rescaling has any effect on p-values -----
+# ==========================================================================================
+
+object<-groupedSCS$Combined
+
+# Grun's code as was
+x     <- object@ndata
+y     <- object@expdata[,names(object@ndata)] # apply same selection cells as ndata 
+part  <- object@cpart # cluster partitioning 
+# Loop over clusters 
+
+i<-5
+
+# calculate mean expressions non-cluster (based normalized data)
+m <-  if ( sum(part != i) > 1 ) apply(x[,part != i],1,mean) else x[,part != i]
+# calculate mean expressions cluster (based normalized data)
+n <-  if ( sum(part == i) > 1 ) apply(x[,part == i],1,mean) else x[,part == i]
+# calculates rescaling factor to rescale data to total cluster-specific transcript median total cell count instead overall
+no <- if ( sum(part == i) > 1 ) median(apply(y[,part == i],2,sum))/median(apply(x[,part == i],2,sum)) else sum(y[,part == i])/sum(x[,part == i])
+m <- m*no
+n <- n*no
+pv <- binompval(m/sum(m),sum(n),n)
+
+
+# Now without rescaling -----
+
+#no <- if ( sum(part == i) > 1 ) median(apply(y[,part == i],2,sum))/median(apply(x[,part == i],2,sum)) else sum(y[,part == i])/sum(x[,part == i])
+no<-1
+m_norescaling <- m*no
+n_norescaling <- n*no
+pv_norescaling <- binompval(m/sum(m),sum(n),n)
+
+
+
+
+
+
+

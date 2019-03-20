@@ -96,8 +96,8 @@ ggplot(data=freq_frame, mapping=aes(x=centers, y=counts,fill=dataset_id)) +
 # Plot violin ------------------------------------------------------------------------------
 TEXTSIZE=15
 ggplot(gene_counts_df, aes(factor(dataset_id), counts)) + 
-  geom_violin(aes(fill = dataset_id))+
-  #geom_boxplot(aes(fill = dataset_id))+
+  #geom_violin(aes(fill = dataset_id))+
+  geom_boxplot(aes(fill = dataset_id))+
   scale_x_discrete(breaks=seq(1,length(datasetnames)),
                    labels=shortdatasetnames)+
   ggtitle(paste("Distribution of transcript counts of ", gene_oi_realname,'\nZero count = ',toString(zero_count))) +
@@ -109,6 +109,8 @@ ggplot(gene_counts_df, aes(factor(dataset_id), counts)) +
     legend.text = element_text(size=TEXTSIZE),
     axis.text.x = element_text(angle = 90, hjust = 1, size=TEXTSIZE))
 
+shortdatasetnames[1]
+mean(gene_counts_df$counts[gene_counts_df$dataset_id==1])
 
 # ==================================================================================================
 # Plotting dimensionality-reduced data, giving markup according to condition =======================

@@ -223,7 +223,7 @@ barplot_differential_expression_v2<-function(selected_data_df,
 }
 
 give_better_textsize_plot <- function(TEXTSIZE){
-  theme(legend.position="none",
+  theme(#legend.position="none",
         text = element_text(size=TEXTSIZE),
         axis.text = element_text(size=TEXTSIZE),
         plot.title = element_text(size=TEXTSIZE))

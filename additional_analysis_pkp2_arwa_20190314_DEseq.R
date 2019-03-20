@@ -158,6 +158,7 @@ cds <- DESeqDataSetFromMatrix(countData=round(df_set1_and_set2,0),colData=des,de
 cds <- DESeq(cds,fitType='local')
 res <- results(cds)
 
+df_res<-as.data.frame(res)
 
 # Re-do previous analysis -- use cluster 5 vs. not cluster 5 ===========================================
 
@@ -167,35 +168,87 @@ indices_set2 <- which(dataframe_cells$cluster!=5)# & dataframe_cells$condition==
 # calculate differential expression
 fn_output<-get_differential_gene_expression(indices_set1,indices_set2,
                                             all_gene_expression,all_gene_expression_raw,
-                                            method='min',pcutoff=0.01)
+                                            method='none',pcutoff=0.01) # min_same
 df_fc_cluster5_mw_method<-fn_output[[1]]
 
 # Also look at built-in RaceID2 results =================================================================
 
-diffExp <- clustdiffgenes(groupedSCS$Combined,pvalue=0.01)
+diffExp <- clustdiffgenes(groupedSCS$Combined,pvalue=1)
 
 # Now compare ===========================================================================================
 
+darkColors <- brewer.pal(brewer.pal.info["Dark2", "maxcolors"], "Dark2")
+
 # now create params to use for comparison 
-fc_mw    <- df_fc_cluster5_mw_method$fc
-pv_mw    <- df_fc_cluster5_mw_method$pv
-fc_deseq <- 2^df_res$log2FoldChange
-pv_deseq <- df_res$pvalue
+#mw
+fc_mw    <- df_fc_cluster5_mw_method$fc[order(df_fc_cluster5_mw_method$fc,decreasing=T)]
+pv_mw    <- df_fc_cluster5_mw_method$pv[order(df_fc_cluster5_mw_method$fc,decreasing=T)]
+#raceID2
+fc_ra  <- diffExp$cl.5$fc[order(diffExp$cl.5$fc,decreasing=T)]
+pv_ra  <- diffExp$cl.5$pv[order(diffExp$cl.5$fc,decreasing=T)]
+#DESeq
+fc_de <- 2^-df_res$log2FoldChange[order(2^-df_res$log2FoldChange,decreasing=T)]
+pv_de <- df_res$pvalue[order(2^-df_res$log2FoldChange,decreasing=T)]
 # combined pv
-pv_color <- (pv_mw<0.01)*0.5+(pv_deseq<0.01)*0.5
+pv_color_de_mw <- (pv_mw<0.01)*0.33+(pv_de<0.01)*0.66
+pv_color_de_ra <- (pv_ra<0.01)*0.33+(pv_de<0.01)*0.66
+pv_color_mw_ra <- (pv_ra<0.01)*0.33+(pv_mw<0.01)*0.66
+# keys
+keys_lab=list()
+keys_pos <- c(0,0.33,0.66,.99)
+keys_lab[[1]] <- c('not sign.','mw sign.','deseq sign.','both sign.')
+keys_lab[[2]] <- c('not sign.','race sign.','deseq sign.','both sign.')
+keys_lab[[3]] <- c('not sign.','race sign.','mw sign.','both sign.')
 
 # create dataframe for scatter plot
-xyline=data.frame(x=seq(0,10,1),y=seq(0,10,1))
-df_scatter=data.frame(fc_mw=fc_mw,fc_deseq=fc_deseq,pv_color=pv_color)
-# plot
-ggplot(data=df_scatter)+
-  geom_point(aes(x=fc_mw,y=fc_deseq,color=pv_color))+
-  scale_colour_gradientn(colors=c('red','orange','green'))+
-  coord_fixed(ratio = 1)+
-  geom_line(data=xyline,aes(x=x,y=y))+
-  give_better_textsize_plot(20)+
-  xlab('Martijn calculation')+ylab('DESeq calculation')
+df_scatter=data.frame(fc_mw=fc_mw,
+                      fc_de=fc_de,
+                      fc_ra=fc_ra,
+                      pv_color_de_mw=pv_color_de_mw,
+                      pv_color_de_ra=pv_color_de_ra,
+                      pv_color_mw_ra=pv_color_mw_ra)
 
+for (idx in 1:3) {
+
+  if (idx==1) {
+    myxlab<-'MW'; myylab<-'DESeq'
+    x_str<-'fc_mw';y_str<-'fc_de';
+    pv_str<-'pv_color_de_mw'
+  } else if (idx==2) {
+    myxlab<-'RaceID2'; myylab<-'DESeq'
+    x_str<-'fc_ra';y_str<-'fc_de';
+    pv_str<-'pv_color_de_ra'
+  } else if (idx==3) {
+    myxlab<-'MW'; myylab<-'RaceID2'
+    x_str<-'fc_mw';y_str<-'fc_ra';
+    pv_str<-'pv_color_mw_ra'
+  }
+  
+  # plot
+  xyline=data.frame(x=seq(0,10,1),y=seq(0,10,1))
+  p<-ggplot(data=df_scatter)+
+    geom_point(aes_string(x=x_str,y=y_str,color=factor(pv_color_mw_ra)))+
+    xlab(paste0('fold change calculated by ',myxlab))+ylab(paste0('fold change calculated by ',myylab))+
+    scale_color_manual(values=c('grey','red','orange','blue'),
+                                               breaks=factor(keys_pos),
+                                               labels=keys_lab[[idx]])+
+    #scale_colour_gradientn(colors=c('grey','orange','blue','black'),    
+    #                       breaks=keys_pos,
+    #                       labels=keys_lab[[idx]])+
+    coord_fixed(ratio = 1)+
+    geom_line(data=xyline,aes(x=x,y=y))+
+    give_better_textsize_plot(20)
+  
+  print(p)
+
+#geom_point(aes(x=fc_mw,y=fc_de,color=pv_color_de_mw))+
+#xlab('MW')+ylab('DESeq')+
+#geom_point(aes(x=fc_ra,y=fc_de,color=pv_color_de_ra))+
+#xlab('RaceID2')+ylab('DESeq')+
+#geom_point(aes(x=fc_mw,y=fc_ra,color=pv_color_mw_ra))+
+#xlab('MW')+ylab('RaceID2')+
+
+}
 
 
 

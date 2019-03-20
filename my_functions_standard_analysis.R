@@ -84,13 +84,20 @@ get_differential_gene_expression <- function(indices_set1,indices_set2,all_gene_
   if (identical(method,'min')) {
     no_set1 <- (median(apply(all_gene_expression_raw[,indices_set1],2,sum))) / (min(apply(all_gene_expression_raw,2,sum)))
     no_set2 <- (median(apply(all_gene_expression_raw[,indices_set2],2,sum))) / (min(apply(all_gene_expression_raw,2,sum)))
+  } else if (identical(method,'min_same')) {
+      no_set1 <- (median(apply(all_gene_expression_raw[,indices_set1],2,sum))) / (min(apply(all_gene_expression_raw,2,sum)))
+      no_set2 <- no_set1
   } else if (identical(method,'median')) {
     no_set1 <- (median(apply(all_gene_expression_raw[,indices_set1],2,sum))) / (median(apply(all_gene_expression_raw,2,sum)))
     no_set2 <- (median(apply(all_gene_expression_raw[,indices_set2],2,sum))) / (median(apply(all_gene_expression_raw,2,sum)))
   } else if (identical(method,'bug')){
-    # Do not use this; I think this method was mistakenly used in original raceID2 code
+    # Do not use this; I think there is a bug here; but this code was used for testing purposes
     no_set1<-(median(apply(all_gene_expression_raw[,indices_set1],2,sum))) / (min(apply(all_gene_expression_raw+.1,2,sum)))
     no_set2<-(median(apply(all_gene_expression_raw[,indices_set2],2,sum))) / (min(apply(all_gene_expression_raw+.1,2,sum)))
+  } else if (identical(method,'bug_same')){
+    # Do not use this; I think this method was mistakenly used in original raceID2 code
+    no_set1<-(median(apply(all_gene_expression_raw[,indices_set1],2,sum))) / (min(apply(all_gene_expression_raw+.1,2,sum)))
+    no_set2<-no_set1
   } else if (identical(method,'none')) {
     no_set1<-1
     no_set2<-1

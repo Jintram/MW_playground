@@ -425,3 +425,82 @@ barplot_differential_expression_v2(df_top_decr_selection,
                                    ylabtext='Times lower in cluster 6',
                                    mytitle=paste('Differential gene expression (cluster 6 vs 7)',sep=''))
 
+
+
+
+
+
+
+
+
+
+# Investigating pkp2 expression=================================================================================
+
+# Get gene expression
+gene_expression<-as.numeric(get_expression_gene(all_gene_expression, '^PKP2_'))
+# Build dataframe
+gene_counts_df=data.frame(counts=gene_expression,
+                          dataset_id=factor(condition_factors),
+                          cluster=cluster_assignments)
+
+# Plot boxplot 
+TEXTSIZE=15
+ggplot(gene_counts_df, aes(factor(dataset_id), counts)) + 
+  #geom_violin(aes(fill = dataset_id))+
+  geom_boxplot(aes(fill = dataset_id))+
+  scale_x_discrete(breaks=seq(1,length(datasetnames)),
+                   labels=shortdatasetnames)+
+  ggtitle(paste('Expression of PKP2')) +
+  xlab(element_blank())+ylab('Transcript count')+
+  theme(legend.position="none",
+        text = element_text(size=TEXTSIZE),
+        axis.text = element_text(size=TEXTSIZE),
+        plot.title = element_text(size=TEXTSIZE),
+        legend.text = element_text(size=TEXTSIZE),
+        axis.text.x = element_text(angle = 90, hjust = 1, size=TEXTSIZE))
+
+shortdatasetnames[1]
+mean(gene_counts_df$counts[gene_counts_df$dataset_id==1])
+
+# ========
+
+# Plot boxplot 
+TEXTSIZE=15
+ggplot(gene_counts_df, aes(factor(cluster), counts)) + 
+  #geom_violin(aes(fill = dataset_id))+
+  geom_boxplot(aes(fill = dataset_id))+
+  scale_x_discrete(breaks=seq(1,max(levels(cluster_assignments))),
+                   labels=lapply(seq(1,max(levels(cluster_assignments))),toString) )+
+  #scale_color_manual(values=col_vector[1:2],labels=shortdatasetnames)+
+  #scale_fill_manual(values=col_vector[1:2],labels=shortdatasetnames)+\
+  scale_fill_hue(labels=shortdatasetnames)+
+  ggtitle(paste('Expression of PKP2')) +
+  xlab('Cluster')+ylab('Transcript count')+
+  theme(#legend.position="none",
+        text = element_text(size=TEXTSIZE),
+        axis.text = element_text(size=TEXTSIZE),
+        plot.title = element_text(size=TEXTSIZE),
+        legend.text = element_text(size=TEXTSIZE),
+        axis.text.x = element_text(angle = 90, hjust = 1, size=TEXTSIZE))
+
+ggplot(gene_counts_df, aes(factor(cluster), counts)) + 
+  geom_jitter(aes(color = dataset_id),width = 0.25)+
+  scale_x_discrete(breaks=seq(1,max(levels(cluster_assignments))),
+                   labels=lapply(seq(1,max(levels(cluster_assignments))),toString) )+
+  scale_color_hue(labels=shortdatasetnames)+ # note: use fill or color; hue or manual
+  ggtitle(paste('Expression of PKP2')) +
+  xlab('Cluster')+ylab('Transcript count')+
+  theme(#legend.position="none",
+    text = element_text(size=TEXTSIZE),
+    axis.text = element_text(size=TEXTSIZE),
+    plot.title = element_text(size=TEXTSIZE),
+    legend.text = element_text(size=TEXTSIZE),
+    axis.text.x = element_text(angle = 90, hjust = 1, size=TEXTSIZE))
+
+ggplot()+
+  geom_histogram(data=gene_counts_df,aes(x=as.numeric(cluster),fill=dataset_id),position='dodge',binwidth=1)+
+  scale_x_continuous(breaks=seq(1,max(levels(cluster_assignments))),
+                   labels=lapply(seq(1,max(levels(cluster_assignments))),toString) )+
+  xlab('Cluster')+
+scale_fill_hue(labels=shortdatasetnames)
+  
