@@ -12,10 +12,10 @@ library('tidyverse')
 library('reshape2')
 library("RColorBrewer")
 library("Rtsne")
-library(grid)
+library("grid")
 library("gridExtra") # this throws an error which appears to be ignorable 
-library(ggplot2)
-require(scales)
+library("ggplot2")
+require("scales")
 
 # Personal libraries
 source("./my_functions_clustering.R")

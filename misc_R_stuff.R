@@ -127,6 +127,18 @@ hit_list    <- which(grepl(search_term,gene_names))
 
 
 
-
+# example of normalization by rows or columns
+example<- matrix(c(1,2,1,
+2,4,6,
+3,6,9), nrow=3, byrow = T)
+# normalize by rows
+example_sum_cells<-apply(example,1,sum)
+norm_example<-sweep(example,1,example_sum_cells,"/") 
+norm_example<-apply(example,2,"/",example_sum_cells) # only for rows is this equivalent
+example/rowSums(example)
+# normalize by columns (USE SWEEP!)
+example_sum_cells<-apply(example,2,sum)
+norm_example<-sweep(example,2,example_sum_cells,"/")
+#apply(example,2,"/",example_sum_cells) * median(example_sum_cells)
 
 
