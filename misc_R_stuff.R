@@ -142,3 +142,15 @@ norm_example<-sweep(example,2,example_sum_cells,"/")
 #apply(example,2,"/",example_sum_cells) * median(example_sum_cells)
 
 
+
+
+
+# simple example of apply fn in combination with correlation fn:
+blabla<-matrix(c(1,2,3,4,5,6,7,8,3,4,5,6),nrow=3)
+apply(blabla[-2,], 1, cor, y=blabla[2,])
+    
+
+
+
+
+
