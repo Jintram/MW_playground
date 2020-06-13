@@ -92,39 +92,3 @@ ggplot(df_output, aes(x=Temp, y=frac_bound, colour=as.factor(oligo))) +
 
 
 
-
-# Now calculate fraction
-df_output_2 <- mdply(df_input, function(Temp,DG,oligo,PrimerConc) {data.frame(
-    frac=1/(   1+exp(DG/(R*(Temp+273)))/PrimerConc   ), 
-    Temp=Temp, DG=DG, oligo=oligo)} ) 
-ggplot(df_output_2, aes(x=Temp, y=frac, colour=as.factor(oligo))) + 
-  geom_line() +
-  geom_hline(yintercept = 1) +
-  geom_hline(yintercept = .5, linetype='dashed') +
-  theme_bw()+xlab('Temp (C)')+ylab('Fraction')+ggtitle('f_bound set by concentration')
-ggplot(df_output_2, aes(x=Temp, y=frac, colour=as.factor(oligo))) + 
-  geom_line() +
-  geom_hline(yintercept = 1) +
-  geom_hline(yintercept = .5, linetype='dashed') +
-  theme_bw()+xlab('Temp (C)')+ylab('Fraction')+coord_trans(y = "log2")+ggtitle('f_bound set by concentration')
-
-
-
-#####
-p=ggplot(data.frame(Temp=0:100))+theme_bw()
-for(DG in seq(0,100,10)) {
-    myfun = function(Temp) {exp(-DG/(R*Temp))}
-    p=p+stat_function(aes(x=Temp),fun=myfun)
-}
-p
-
-ggplot(data.frame(Temp=0:100))+theme_bw()+
-    stat_function(aes(x=Temp),fun=myfun)+
-    stat_function(aes(x=Temp),fun=myfun)
-    
-
-myfun = function(Temp,DG) {exp(-DG/(R*Temp))}
-Temp = seq(0,100,10)
-DG = seq(0,100,10)
-persp(x=Temp, y=DG, z=outer(Temp,DG,myfun),theta = 30, phi = 15,col = "springgreen", shade = 0.5)
-
