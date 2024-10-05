@@ -1,0 +1,29 @@
+
+
+# To run this..
+# conda create -n env_snake2 -c bioconda snakemake
+# conda install anaconda::wget
+# conda activate env_snake2
+
+################################################################################
+# Parameters to change
+
+# Some settings that you should change according to your own setup and the latest genome release
+# See https://www.ensembl.org/info/data/ftp/index.html/ for the latest genome release
+localreffolder="/home/m.wehrens_cbs-niob.local/ref/"
+localreffolder="/Users/m.wehrens/temp/ref/"
+
+# Where to find the genome files
+# mouse
+loc_mm="https://ftp.ensembl.org/pub/release-111/fasta/mus_musculus/dna/"
+fafile_mm="Mus_musculus.GRCm39.dna.primary_assembly.fa.gz"
+# human
+loc_hs="https://ftp.ensembl.org/pub/release-111/fasta/homo_sapiens/dna/"
+fafile_hs="Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz"
+
+################################################################################
+
+rule download_mouse_fa:
+    output: loc_mm+fafile_mm
+    shell:
+        "wget -P {localreffolder} {loc_mm}{fafile_mm}"

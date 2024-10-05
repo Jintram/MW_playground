@@ -1,12 +1,21 @@
 
-# I think the math is not entirely correct yet here ..
-
-# A main assumption is that my free energy is DG = (oligo_length * -1 + 3.4).
-# Estimate based on tables in Sugimoto1996
+################################################################################
 
 library(ggplot2)
 library(plyr)
 library(dplyr)
+
+outputfolder = '/Users/m.wehrens/Documents/Project_files/_project_allelic_imbalance/experimental_design_n_methods/primer_design/thinking_about_thermodynamics/'
+
+################################################################################
+# Just a function I find convenient for plotting
+
+give_better_textsize_plot <- function(TEXTSIZE){
+  theme(#legend.position="none",
+        text = element_text(size=TEXTSIZE),
+        axis.text = element_text(size=TEXTSIZE),
+        plot.title = element_text(size=TEXTSIZE))
+}
 
 ################################################################################
 
@@ -57,6 +66,9 @@ fun_DS = function(n) {n*mean_DS_kC+DS_Init_kC}
 # Functions to calculate fraction bound and Tm
 fn_bound = function(DH, DS, Temp, Conc) 
     {Temp_K=(Temp+273.15); 1/(exp(+(DH-Temp_K*DS)/(R_kC*Temp_K))/Conc+1)} # in kC
+    # Note: I don't understand where the + sign in the exponential comes from,
+    # my derivation would put a minus sign there; however, the formula is only
+    # consistent with Tm formula and expectation if I put the + sign there..
 fn_Tm = function(DH, DS, Conc) { # in kC
     Tm=(DH / (DS + R_kC * log(Conc))); return(Tm-273.15)}
 
@@ -77,18 +89,20 @@ ggplot(data.frame(Temp=1:100, Fraction=fn_bound(fun_DH(10), fun_DS(10), 1:100, P
 # Now a plot for multiple oligo lengths
 
 # Set up input dataframe
-df_input = expand.grid(Temp = seq(0,100,.1), oligo = seq(1,30,5))
+df_input = expand.grid(Temp = seq(0,100,.1), oligo = seq(5,30,5))
 
 # Calculate output dataframe
 df_output <- mdply(df_input, function(Temp,oligo) {data.frame(
     Temp=Temp, oligo=oligo, frac_bound = fn_bound(fun_DH(oligo), fun_DS(oligo), Temp, PrimerConc) )} )  # original
 
-ggplot(df_output, aes(x=Temp, y=frac_bound, colour=as.factor(oligo))) + 
-  geom_line() +
-  geom_hline(yintercept = 1) +
-  theme_bw()+xlab('Temperature (C)')+ylab('Fraction bound oligo\'s')
+p=ggplot(df_output, aes(x=Temp, y=frac_bound, colour=as.factor(oligo))) + 
+    geom_hline(yintercept = 1) +
+    geom_hline(yintercept = .5) +
+    geom_line() +
+    theme_bw()+xlab('Temperature (C)')+ylab('Fraction bound oligo\'s')+
+    give_better_textsize_plot(8)
 
-
+ggsave(filename = paste0(outputfolder, 'T_vs_fbound.pdf'), plot = p, units = 'mm', width=75, height=50)
 
 
 

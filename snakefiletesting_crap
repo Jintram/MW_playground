@@ -1,0 +1,41 @@
+
+# snakemake --snakefile ./snakefile_test download_fasta --config species=mouse
+
+# To run this..
+# conda create -n env_snake2 -c bioconda snakemake
+# conda install anaconda::wget
+# conda activate env_snake2
+
+# see also
+# https://snakemake.readthedocs.io/en/stable/tutorial/basics.html
+# https://snakemake.readthedocs.io/en/stable/snakefiles/rules.html
+# https://snakemake.readthedocs.io/en/stable/tutorial/advanced.html#step-4-rule-parameters
+# https://stackoverflow.com/questions/61905249/lambda-function-in-snakemake-output
+
+outputfolder="/Users/m.wehrens/temp/"
+fafile_mm="mousetest.fa"
+fafile_hs="humantest.fa"
+
+rule all:
+    input:
+        ["output/{sample_id}_{species}.log"]
+        # outputfolder+"bla.fa" # it'll now try to make the bla.fa, so it'll run the download_fasta rule
+
+rule download_fasta:
+    output:
+        outputfolder+{species}/+fafile_mm if {species} == "mouse" else outputfolder+{species}/+fafile_hs
+        # outputfolder+"bla.fa"
+    #params:
+        #url=lambda wildcards: loc_mm + fafile_mm if wildcards.species == "mouse" else loc_hs + fafile_hs,
+        #wheretoputit=lambda wildcards: outputfolder + fafile_mm if wildcards.species == "mouse" else outputfolder + fafile_hs
+    shell:
+        "touch {output}"
+
+rule run_sth:
+    input:
+        outputfolder+{species}/+fafile_mm if {species} == "mouse" else outputfolder+{species}/+fafile_hs,
+        "input/{species}/{sample_id}.fastq"
+    output:
+        "output/{sample_id}_{species}.log"
+    shell:
+        "touch output/{sample_id}_{species}.log"
