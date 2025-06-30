@@ -66,22 +66,24 @@ myN=10_000
 myT=10_000
 replicate_means, data = simulate(meanB=100, N=myN, T=myT, var_B=10, var_D = .1, seed = 42)
 
+#####
+# plot some data
+plt.plot(data[0:5].T)
+plt.show(); plt.close()
+
+#####
+# Convert to dataframe
+df_data = pd.DataFrame(data)
+df_data.columns = ['d'+str(X+1) for X in range(myT)]
+df_data.index =   ['r'+str(X+1) for X in range(myN)]
+
 # double check variance is as expected:
 df_data.T.var()
 np.mean(df_data.T.var()) # biological variance
 np.mean(df_data.var()) # day-to-day variance
     # numbers are ±as expected
 
-# plot some data
-plt.plot(data[0:5].T)
-plt.show(); plt.close()
-
-# Convert to dataframe
-df_data = pd.DataFrame(data)
-df_data.columns = ['d'+str(X+1) for X in range(myT)]
-df_data.index =   ['r'+str(X+1) for X in range(myN)]
-
-
+#####
 # Calculations on the full data (e.g. myN=10_000, myT=10_000)
 #
 # Strategy 1 (incorrect)
@@ -99,8 +101,9 @@ np.mean(CVs)
 # theoretical value
 np.sqrt(.1)/100
 
-
-### For a smaller subset (only 5 replicates and days)
+#####
+# For a smaller subset (only 5 replicates and days)
+#
 df_data_subset = df_data.iloc[0:5, 0:5]
 # Strategy 1, incorrect 
 means_d_subset = df_data_subset.mean()
