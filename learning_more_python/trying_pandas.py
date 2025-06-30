@@ -104,10 +104,29 @@ my_series.value_counts()
 # One can also "pivot" datafrmaes, meaning a table is constructed based
 # on indexing parameters and values (basically the reverse of melt in R)
 
-
+##################
 # Grouping can be used to group by values and then perform actions
 # (Similar to R)
+# What happens here:
+# A dataframe is created with two levels of indexing, 
+# indexing can be used to group by these levels (ie ~categories)
+arrays = [['Falcon', 'Falcon', 'Parrot', 'Parrot'],
+          ['Captive', 'Wild', 'Captive', 'Wild']]
+index = pd.MultiIndex.from_arrays(arrays, names=('Animal', 'Type'))
+df = pd.DataFrame({'Max Speed': [390., 350., 30., 20.]},
+                  index=index)
+df
 
+df.groupby(level=0).mean()
+df.groupby(level='Animal').mean()
+
+df.groupby(level=1).mean()
+
+# diff will calculate the difference between rows,
+# where it will calculate (row_[i] - row_[i-1])
+df.groupby(level=0).diff()
+
+##################
 
 # There's something called "stacking" (??)
 
