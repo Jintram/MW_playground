@@ -35,7 +35,7 @@ how fast each sample cycles through how much variation.
 # import argparse
 import numpy as np
 import matplotlib.pyplot as plt
-
+import pandas as pd
 
 def simulate(meanB, N: int, T: int, var_B: float, var_D: float, seed: int):
     """
@@ -61,22 +61,10 @@ def simulate(meanB, N: int, T: int, var_B: float, var_D: float, seed: int):
     return replicate_means, data
 
     
-
+# Make the simulation data
 myN=10_000
 myT=10_000
-replicate_means, data = simulate(meanB=100, N=myN, T=myT, var_B=10, var_D = .1, seed = 21)
 replicate_means, data = simulate(meanB=100, N=myN, T=myT, var_B=10, var_D = .1, seed = 42)
-
-# showing that the replicate and daily means are indeed what we put in:
-
-
-plt.plot(data.T)
-plt.show(); plt.close()
-
-import pandas as pd
-df_data = pd.DataFrame(data)
-df_data.columns = ['d'+str(X+1) for X in range(myT)]
-df_data.index =   ['r'+str(X+1) for X in range(myN)]
 
 # double check variance is as expected:
 df_data.T.var()
@@ -84,8 +72,17 @@ np.mean(df_data.T.var()) # biological variance
 np.mean(df_data.var()) # day-to-day variance
     # numbers are ±as expected
 
+# plot some data
+plt.plot(data[0:5].T)
+plt.show(); plt.close()
 
-# Calculations
+# Convert to dataframe
+df_data = pd.DataFrame(data)
+df_data.columns = ['d'+str(X+1) for X in range(myT)]
+df_data.index =   ['r'+str(X+1) for X in range(myN)]
+
+
+# Calculations on the full data (e.g. myN=10_000, myT=10_000)
 #
 # Strategy 1 (incorrect)
 # first calculate daily means
@@ -104,7 +101,7 @@ np.mean(CVs)
 np.sqrt(.1)/100
 
 
-### For a smaller subset
+### For a smaller subset (only 5 replicates and days)
 df_data_subset = df_data.iloc[0:5, 0:5]
 # Strategy 1, incorrect 
 means_d_subset = df_data_subset.mean()
