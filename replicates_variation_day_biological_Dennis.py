@@ -93,7 +93,6 @@ np.sqrt(np.var(means_d))/np.mean(means_d)
 # Strategy 2 (correct)
 # first calculate CV per biological replicate
 CVs = (np.sqrt(df_data.T.var())/df_data.T.mean())
-    # in the original model, the means are different, so this cannot hold
 # then take mean
 np.mean(CVs)
 #
