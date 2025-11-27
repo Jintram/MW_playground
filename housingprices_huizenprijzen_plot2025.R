@@ -96,15 +96,20 @@ p <- ggplot(data_huizen %>% filter(year>2013)) +
     geom_line(data = data_prijsontwikkeling, aes(x = date, y = fit_offset_prijsidx + fit_coeff_prijsidx * Prijsindex, 
                                                  color='Kadaster Prijsindex'), linewidth=1.5) + # , color='red'
     # data points
-    geom_point(aes(x = data_conv, y =  m2.prijs, color='Verkoop (kadaster)'), size=2) +
+    geom_point(aes(x = data_conv, y =  m2.prijs, color='Verkoop (kadaster)'), size=2) + # color=postcode
     ###
     scale_x_date(date_labels = "%Y-%m", date_breaks = "6 months", limits=as.Date(c("2015-01-01", "2025-12-31"))) +
     xlab('Datum')+ylab('Prijs per m2 (euro)')+
     # put legend inside and left top
-    theme(legend.position = c(0.15, 0.85),
-          legend.background = element_rect(fill = "white", color = "black"),
-          panel.grid.major = element_line(color = "grey30", size = 0.5),
-          panel.grid.minor = element_line(color = "grey70", size = 0.25))+
+    #theme(legend.position = c(0.15, 0.85),
+    #      legend.background = element_rect(fill = "white", color = "black"),
+    #      panel.grid.major = element_line(color = "grey30", size = 0.5),
+    #      panel.grid.minor = element_line(color = "grey70", size = 0.25))+
+    # no legend
+    theme(legend.position = 'none',
+              legend.background = element_rect(fill = "white", color = "black"),
+              panel.grid.major = element_line(color = "grey30", size = 0.5),
+              panel.grid.minor = element_line(color = "grey70", size = 0.25))+
     labs(color = "Data")+ 
     scale_color_manual(values = c('Verkoop (kadaster)' = '#000000', 'Lineare fit' = '#0072b2', 'Kadaster Prijsindex' = '#009e73')) + # #e69f00
     correct_font_sizes_MW(mysize=8, myface="Arial") 
