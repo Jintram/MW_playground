@@ -17,5 +17,9 @@ python analyzing_car_data_v3claude.py /Users/m.wehrens/Documents/Personal/auto/2
 python extracting_car_data_v3claude.py https://www.anwb.nl/auto/kopen/zoeken/merk/ford/model/mustang-mach-e
 python analyzing_car_data_v3claude.py /Users/m.wehrens/Documents/Personal/auto/2026/cardata_anwb_ford_mustang-mach-e_2026-11-08.xlsx
 
-python extracting_car_data_v3claude.py https://www.anwb.nl/auto/kopen/zoeken/merk/hyundai/model/kona
+# Hyundai Kona: ANWB lists "Kona" and "Kona Electric" as separate models.
+# Most electric Konas (~343) are filed under model/kona-electric; only ~20 electric ones
+# are filed under model/kona (findable with ?brandstof[0]=elektriciteit). Using kona-electric here.
+python extracting_car_data_v3claude.py https://www.anwb.nl/auto/kopen/zoeken/merk/hyundai/model/kona-electric
 python analyzing_car_data_v3claude.py 
+

@@ -143,24 +143,95 @@ def api_call(path, data=None, params=None, method='GET'):
 ########################################################################
 # Parsing the search URL
 
+# URL query parameter -> API field, as defined in ANWB's search app JavaScript
+URL_MULTISELECT_SLUG = {   # e.g. ?brandstof[0]=elektriciteit&brandstof[1]=hybride
+    'brandstof': 'fuelType', 'transmissie': 'transmissionType', 'carrosserie': 'bodyType',
+    'kleur': 'color', 'uitrusting': 'searchOptions', 'zekerheden': 'guaranteeType',
+    'energielabel': 'energyLabel',
+}
+URL_MULTISELECT_INT = {'aantal-deuren': 'numberOfDoors', 'aantal-zitplaatsen': 'numberOfSeats'}
+URL_RANGE = {'prijs': 'price', 'kilometerstand': 'mileage'}   # e.g. ?prijs=20000-30000
+URL_FROM_UNTIL = {   # e.g. ?vanaf-bouwjaar=2021&tot-en-met-bouwjaar=2023
+    'bouwjaar': 'constructionYear', 'vermogen': 'power', 'aanhangwagenmassa': 'towingWeight',
+}
+
+
+def _to_int(s):
+    return int(re.sub(r'[^\d]', '', s)) if re.search(r'\d', s or '') else None
+
+
 def parse_search_url(url):
     """
-    Turn an anwb.nl search URL into an API filter.
-    Supports .../zoeken/merk/<brand>[/model/<model>].
+    Turn an anwb.nl search URL into an API filter, the way the website does it.
+    Path:   .../zoeken/merk/<brand>[/model/<model>]
+    Query:  brandstof[0]=..., carrosserie[0]=..., kleur[0]=..., transmissie[0]=..., energielabel[0]=...,
+            prijs=<min>-<max>, kilometerstand=<min>-<max>, vanaf-/tot-en-met-bouwjaar=<year>,
+            vanaf-/tot-en-met-vermogen=<pk>, postcode-en-afstand=<postcode>-<km>km, ...
+    Unknown query parameters are reported and ignored.
     """
-    path = urllib.parse.urlparse(url).path
-    m_brand = re.search(r'/merk/([^/?]+)', path)
-    m_model = re.search(r'/model/([^/?]+)', path)
-    query = urllib.parse.urlparse(url).query
-    if query:
-        print(f'WARNING: extra filters in the URL ("?{query}") are ignored; '
-              'only brand/model are applied. Filter afterwards in pandas/Excel.')
+    parsed = urllib.parse.urlparse(url)
+    m_brand = re.search(r'/merk/([^/?]+)', parsed.path)
+    m_model = re.search(r'/model/([^/?]+)', parsed.path)
     if not m_brand:
         raise ValueError('Could not find /merk/<brand> in the URL: ' + url)
     brand_filter = {'slug': m_brand.group(1)}
     if m_model:
         brand_filter['models'] = [{'slug': m_model.group(1)}]
-    return {'brandModel': {'filter': [brand_filter]}}
+    filters = {'brandModel': {'filter': [brand_filter]}}
+
+    # collect query values per parameter, merging 'brandstof[0]', 'brandstof[1]', ... into 'brandstof'
+    params = {}
+    for key, value in urllib.parse.parse_qsl(parsed.query):
+        params.setdefault(re.sub(r'\[\d*\]$', '', key.lower()), []).append(value)
+
+    from_until = {}
+    for key, values in params.items():
+        if key in URL_MULTISELECT_SLUG:
+            slugs = [v for val in values for v in val.split(',') if v]
+            filters[URL_MULTISELECT_SLUG[key]] = {'filter': [{'slug': s} for s in slugs]}
+        elif key in URL_MULTISELECT_INT:
+            nums = [_to_int(v) for val in values for v in val.split(',') if _to_int(v) is not None]
+            filters[URL_MULTISELECT_INT[key]] = {'filter': [{'name': n} for n in nums]}
+        elif key in URL_RANGE:
+            parts = values[0].split('-') if len(values) == 1 else values[:2]
+            lo, hi = (_to_int(parts[0]), _to_int(parts[1]) if len(parts) > 1 else None)
+            rng = {}
+            if lo is not None:
+                rng['min'] = [{'name': lo}]
+            if hi is not None:
+                rng['max'] = [{'name': hi}]
+            filters[URL_RANGE[key]] = rng
+        elif re.match(r'(vanaf|tot-en-met)-', key) and key.split('-')[-1] in URL_FROM_UNTIL:
+            api_key = URL_FROM_UNTIL[key.split('-')[-1]]
+            bound = 'min' if key.startswith('vanaf') else 'max'
+            from_until.setdefault(api_key, {})[bound] = [{'name': _to_int(values[0])}]
+        elif key == 'postcode-en-afstand':   # e.g. 3584-25km
+            postcode, _, dist = values[0].partition('-')
+            filters['location'] = {'postalCode': [{'name': postcode}]}
+            if _to_int(dist):
+                filters['location']['distance'] = [{'name': _to_int(dist)}]
+        else:
+            print(f'WARNING: URL filter "{key}={values}" is not supported and is ignored.')
+    filters.update(from_until)
+    return filters
+
+
+def describe_filters(filters):
+    """Short text for the file name, e.g. 'hyundai_kona_elektriciteit'."""
+    f = filters['brandModel']['filter'][0]
+    parts = [f['slug']] + ([f['models'][0]['slug']] if 'models' in f else [])
+    for key, val in filters.items():
+        if key == 'brandModel':
+            continue
+        if 'filter' in val:
+            parts.append('-'.join(str(x.get('slug', x.get('name'))) for x in val['filter']))
+        elif 'min' in val or 'max' in val:
+            lo = val.get('min', [{}])[0].get('name', '')
+            hi = val.get('max', [{}])[0].get('name', '')
+            parts.append(f'{key}{lo}-{hi}')
+        elif key == 'location':
+            parts.append('pc' + str(val['postalCode'][0]['name']))
+    return re.sub(r'[^\w.-]+', '-', '_'.join(parts))
 
 
 ########################################################################
@@ -343,6 +414,7 @@ def extract(search_url, outputdir=OUTPUTDIR, details=True, max_cars=None, delay=
     today = dt.date.today()
     filters = parse_search_url(search_url)
     print(f'Searching: {search_url}')
+    print(f'API filter: {json.dumps(filters)}')
     hits, total = fetch_all_listings(filters, max_cars=max_cars, delay=delay)
     print(f'Found {len(hits)} cars (site reports {total}).')
 
@@ -358,8 +430,7 @@ def extract(search_url, outputdir=OUTPUTDIR, details=True, max_cars=None, delay=
                               'value': [search_url, today.isoformat(), len(df), details]})
 
     if outfile is None:
-        f = filters['brandModel']['filter'][0]
-        name = f['slug'] + ('_' + f['models'][0]['slug'] if 'models' in f else '')
+        name = describe_filters(filters)
         outfile = os.path.join(outputdir, str(today.year), f'cardata_anwb_{name}_{today:%Y-%m-%d}.xlsx')
     os.makedirs(os.path.dirname(outfile), exist_ok=True)
     with pd.ExcelWriter(outfile) as writer:
