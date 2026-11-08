@@ -5,3 +5,4 @@ plots/
 *.pdf
 *.png
 .snakemake/
+.DS_Store
