@@ -8,6 +8,14 @@ Usage (command line):
 
 Or interactively (e.g. VS Code cells): set SEARCH_URL below and run the file.
 
+Where the Excel file goes
+-------------------------
+By default NOT in the current directory, but in:
+    OUTPUTDIR/<current year>/cardata_anwb_<brand>_<model>_<date>.xlsx
+    e.g. /Users/m.wehrens/Documents/Personal/auto/2026/cardata_anwb_kia_niro-ev_2026-11-08.xlsx
+(OUTPUTDIR is set below). Use  -o <path.xlsx>  to choose the file yourself, or --outputdir <dir>.
+The script prints the full path when it is done ("Saved N cars to ...").
+
 How it works
 ------------
 The ANWB "occasion zoeken" page doesn't contain the car data in its HTML; a JavaScript
@@ -66,25 +74,30 @@ PAGE_SIZE = 100  # the API accepts up to 200; the website uses 30
 _api_key = API_KEY_DEFAULT
 
 
-def _http(url, data=None, headers=None, method=None, retries=3):
-    """Simple HTTP request with retries; returns the decoded body as text."""
+def _http(url, data=None, headers=None, method=None, retries=6):
+    """Simple HTTP request with retries; returns the decoded body as text.
+    On '429 Too Many Requests' it waits (Retry-After header, else 5, 10, 20, 40, 60 s) and retries."""
     headers = dict(headers or {})
     headers.setdefault('User-Agent', USER_AGENT)
     body = json.dumps(data).encode() if data is not None else None
     for attempt in range(retries):
         req = urllib.request.Request(url, data=body, headers=headers, method=method)
+        wait = min(5 * 2 ** attempt, 60)
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
                 return resp.read().decode('utf-8')
         except urllib.error.HTTPError as e:
-            if e.code in (401, 403):
+            if e.code in (401, 403, 404) or attempt == retries - 1:
                 raise
-            if attempt == retries - 1:
-                raise
+            retry_after = e.headers.get('Retry-After') if e.headers else None
+            if retry_after and retry_after.isdigit():
+                wait = int(retry_after) + 1
+            if e.code == 429:
+                print(f'  rate limited (429), waiting {wait} s ...')
         except urllib.error.URLError:
             if attempt == retries - 1:
                 raise
-        time.sleep(2 * (attempt + 1))
+        time.sleep(wait)
 
 
 def discover_api_key():
@@ -179,15 +192,29 @@ def fetch_all_listings(filters, page_size=PAGE_SIZE, max_cars=None, delay=0.3):
 
 
 def fetch_details(ids, delay=0.3):
-    details = {}
+    """Fetch detail records; failed ones are retried once more at the end (after a pause)."""
+    details, failed = {}, []
     for i, ad_id in enumerate(ids, 1):
         try:
             details[ad_id] = api_call(f'/listings/fetch/{ad_id}')
-        except Exception as e:  # listing may have been removed in the meantime
-            print(f'  could not fetch details for {ad_id}: {e}')
+        except Exception as e:  # e.g. listing removed in the meantime, or persistent rate limit
+            print(f'  could not fetch details for {ad_id}: {e} (will retry at the end)')
+            failed.append(ad_id)
         if i % 25 == 0 or i == len(ids):
             print(f'  details {i}/{len(ids)}')
         time.sleep(delay)
+    if failed:
+        print(f'Retrying {len(failed)} failed detail pages after 30 s ...')
+        time.sleep(30)
+        for ad_id in failed:
+            try:
+                details[ad_id] = api_call(f'/listings/fetch/{ad_id}')
+            except Exception as e:
+                print(f'  still no details for {ad_id}: {e} -> row has search-result fields only')
+            time.sleep(delay * 3)
+    n_missing = len(ids) - len(details)
+    print(f'Details fetched for {len(details)}/{len(ids)} cars' +
+          (f' ({n_missing} rows have search-result fields only)' if n_missing else ''))
     return details
 
 
